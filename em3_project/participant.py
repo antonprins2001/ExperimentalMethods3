@@ -1,4 +1,4 @@
 class Participant:
-    def __init__(self, participant_id, condition=None):
+    def __init__(self, participant_id, group=None):
         self.participant_id = participant_id
-        self.condition = condition
+        self.group = group

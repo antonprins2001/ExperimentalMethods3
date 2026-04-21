@@ -3,6 +3,4 @@ from settings import Settings
 from participant import Participant
 from block import Block
 from trial import Trial
-from data_collecter import DataManager
-
-print("gotcha back again again3")
+from data_manager import DataManager
