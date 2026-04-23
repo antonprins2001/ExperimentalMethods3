@@ -28,3 +28,11 @@ def checkIfEscape():
     keys = event.getKeys()
     if 'escape' in keys:
         core.quit()
+
+    
+
+   
+
+    pd.DataFrame(trial_data).to_csv(trial_file, index=False)
+    pd.DataFrame(test_data).to_csv(test_file, index=False)
+        

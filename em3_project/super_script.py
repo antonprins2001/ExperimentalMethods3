@@ -249,7 +249,7 @@ def GenerateNewSeq(seq, pos, alts, altpos):
 
     return new_seq, alt_prob
 
-def CollectTrials(trial_seqs):
+def CollectTrials(trial_seqs, subject_id):
 
     test_data = {
         "Trial": [],
@@ -282,6 +282,12 @@ def CollectTrials(trial_seqs):
         if seq_data["Generated"]:
             trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"], altposition = seq_data["Position"])
             path_tones, path_probs, alt_tones, alt_probs, RTs, color, altpos = trial
+            test_data = {...}
+            trial_data = {...}
+
+            os.makedirs("data", exist_ok=True)
+            trial_file = f"data/{subject_id}_trial_data.csv"
+            test_file = f"data/{subject_id}_test_data.csv"
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -353,7 +359,8 @@ def CollectTrials(trial_seqs):
             test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
             test_data["New_Tone_Surprise"].append(alt_prob)
             test_data["RT"].append(rt)
-        
+        pd.DataFrame(trial_data).to_csv(trial_file, index=False)
+        pd.DataFrame(test_data).to_csv(test_file, index=False)
     return test_data, trial_data
 
 path = "Sequence/sequences.csv"
@@ -363,7 +370,8 @@ fullscreen, window_size, bg_color, text_color, duration, response_keys = getSett
 win = visual.Window(size=window_size, color = bg_color, units = "pix")
 clock = core.Clock()
 
-test_data, trial_data = CollectTrials(trial_seqs)
+subject_id = getSubjectInfo()
+test_data, trial_data = CollectTrials(trial_seqs, subject_id)
 
 core.quit()
 
