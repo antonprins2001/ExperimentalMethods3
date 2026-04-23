@@ -1,4 +1,5 @@
-
+from psychopy import visual
+import random
 
 def ConvertFreq(tone):
     return round(440 * (2**((tone - 69)/12)), 3)
