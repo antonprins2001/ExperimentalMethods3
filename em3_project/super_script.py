@@ -282,8 +282,6 @@ def CollectTrials(trial_seqs, subject_id):
         if seq_data["Generated"]:
             trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"], altposition = seq_data["Position"])
             path_tones, path_probs, alt_tones, alt_probs, RTs, color, altpos = trial
-            test_data = {...}
-            trial_data = {...}
 
             os.makedirs("data", exist_ok=True)
             trial_file = f"data/{subject_id}_trial_data.csv"
