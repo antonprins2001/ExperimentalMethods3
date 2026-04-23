@@ -124,6 +124,17 @@ def ProductionTrial(tree, prob_tree, altposition):
     firstMSG = visual.TextStim(win, text="First version", pos= [0, -150], color="black")
     secondMSG = visual.TextStim(win, text="Second version", pos= [0, -150], color="black")
 
+    square.draw()
+    win.flip()
+
+    freq = ConvertFreq(path_tones[0])
+    tone = sound.Sound(value=freq, secs=duration)
+    tone.play()
+    clock.reset()
+    event.waitKeys()
+    RTs.append(clock.getTime())
+
+
     for i in range(7):
 
         child1 = 2*(parent+1)-1
@@ -233,9 +244,9 @@ def TestTrial(seq, change, pos, col):
 def GenerateNewSeq(seq, pos, alts, altpos):
     
     new_seq = seq
-    new_seq[pos-1] = alts[altpos]
-    return new_seq
-    
+    alt_tone, alt_prob = alts[altpos]
+    new_seq[pos-1] = alt_tone
+
     return new_seq, alt_prob
 
 def CollectTrials(trial_seqs):
@@ -281,6 +292,9 @@ def CollectTrials(trial_seqs):
                 trial_data["Surprise"].append(path_probs[i])
                 trial_data["Alternative"].append(alt_tones[i])
                 trial_data["Alt_Surprise"].append(alt_probs[i])
+                print("i=",i)
+                print("len(RTs)=",len(RTs))
+                print("RTs=",RTs)
                 trial_data["RT"].append(RTs[i])
 
             seq = path_tones
@@ -300,6 +314,9 @@ def CollectTrials(trial_seqs):
                 trial_data["Surprise"].append(seq_data["Probabilites"][i])
                 trial_data["Alternative"].append(None)
                 trial_data["Alt_Surprise"].append(None)
+                print("i=",i)
+                print("len(RTs)=",len(RTs))
+                print("RTs=",RTs)
                 trial_data["RT"].append(RTs[i])
         
             seq = seq_data["Sequence"]
@@ -338,7 +355,6 @@ def CollectTrials(trial_seqs):
             test_data["RT"].append(rt)
         
     return test_data, trial_data
-
 
 path = "Sequence/sequences.csv"
 trial_seqs = GenerateTrials(path)
