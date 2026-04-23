@@ -1,4 +1,8 @@
 def GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], seq_data["Generated"], altpos)
+    
+    new_seq = seq
+    new_seq = 
+    
     return new_seq, alt_prob
 
 def CollectTrials(trial_seqs):
@@ -32,8 +36,8 @@ def CollectTrials(trial_seqs):
 
     for trial_num, seq_data in enumerate(trial_seqs):
         if seq_data["Generated"]:
-            trial = ProductionTrial(tree=seq_data["Sequence"], probs=seq_data["Probabilities"])
-            path_tones, path_probs, alt_tones, alt_probs, RTs, color = trial
+            trial = ProductionTrial(tree=seq_data["Sequence"], probs=seq_data["Probabilities"], altposition = seq_data["Position"])
+            path_tones, path_probs, alt_tones, alt_probs, RTs, color, altpos = trial
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -98,3 +102,5 @@ def CollectTrials(trial_seqs):
             test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
             test_data["New_Tone_Surprise"].append(alt_prob)
             test_data["RT"].append(rt)
+        
+    return test_data, trial_data

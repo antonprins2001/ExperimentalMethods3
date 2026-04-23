@@ -49,7 +49,7 @@ def MemoryTrial(sequence):
 
     return RTs, col
 
-def ProductionTrial(tree, prob_tree):
+def ProductionTrial(tree, prob_tree, altposition):
     path_tones = [tree[0]]
     path_probs = [prob_tree[0]]
     alt_tones = [None]
@@ -73,6 +73,8 @@ def ProductionTrial(tree, prob_tree):
 
         path1 = path_tones + tree[child1]
         path2 = path_tones + tree[child2]
+
+        altpos = -1
 
         square.draw()
         firstMSG.draw()
@@ -113,13 +115,18 @@ def ProductionTrial(tree, prob_tree):
         
         RTs.append(clock.getTime())
 
+        if i == altposition:
+            altpos = parent-2**i+1
+
+        parent = choice
+    
         path_tones.append(tree[choice])
         path_probs.append(prob_tree[choice])
 
         alt_tones.append(tree[alt])
         alt_probs.append(prob_tree[alt])
 
-    return path_tones, path_probs, alt_tones, alt_probs, RTs, col
+    return path_tones, path_probs, alt_tones, alt_probs, RTs, col, altpos
 
 def TestTrial(seq, change, pos, col):
     testMessage = visual.TextStim(win, text="Is the following melody the same as before? Press key", pos= [0, 0], color="black")
