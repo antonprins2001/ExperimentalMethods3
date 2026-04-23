@@ -1,14 +1,14 @@
-def getSettings(fullscreen, window_size, bg_color, text_color, duration, response_keys, n_blocks):
+def getSettings():
     fullscreen = False
     window_size = (1200, 800)
-    bg_color = "black"
+    bg_color = "blue"
     text_color = "white"
 
     duration = 0.4
 
     response_keys = ["z", "m"]
-    n_blocks = 2
-    return fullscreen, window_size, bg_color, text_color, duration, response_keys, n_blocks
+
+    return fullscreen, window_size, bg_color, text_color, duration, response_keys
 
 def getSubjectInfo():
     info = {'FID': 0}

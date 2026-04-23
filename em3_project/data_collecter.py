@@ -1,3 +1,5 @@
+def GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], seq_data["Generated"], altpos)
+    return new_seq, alt_prob
 
 def CollectTrials(trial_seqs):
 
@@ -6,7 +8,7 @@ def CollectTrials(trial_seqs):
         "Generated": [],
         "Changed": [],
         "Guess": [],
-        "Surprise_Cons": [],
+        "Surprise_Cond": [],
         "Old_Tone": [],
         "Old_Tone_Surprise": [],
         "New_Tone": [],
@@ -45,6 +47,7 @@ def CollectTrials(trial_seqs):
                 trial_data["RT"].append(RTs[i])
 
             seq = path_tones
+            probs = path_probs
 
         else: #Memorization task
             trial = MemoryTrial(seq=seq_data["Sequence"])
@@ -62,13 +65,36 @@ def CollectTrials(trial_seqs):
                 trial_data["RT"].append(RTs[i])
         
             seq = seq_data["Sequence"]
+            probs = seq_data["Probabilities"]
 
         if not seq_data["Change"]:
-            test = TestTrial(seq, color)
+            test = TestTrial(seq, False, -1, color)
             guess, rt = test
+
+            test_data["Trial"].append(trial_num)
+            test_data["Generated"].append(seq_data["Generated"])
+            test_data["Changed"].append(False)
+            test_data["Guess"].append(guess)
+            test_data["Surprise_Cond"].append(seq_data["Surprisal"])
+            test_data["Old_Tone"].append(None)
+            test_data["Old_Tone_Surprise"].append(None)
+            test_data["New_Tone"].append(None)
+            test_data["New_Tone_Surprise"].append(None)
+            test_data["RT"].append(rt)
 
         
         else: #Alternative sequence
-            new_seq = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], seq_data["Generated"], altpos)
-            test = TestTrial(new_seq, color)
+            new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], seq_data["Generated"], altpos)
+            test = TestTrial(new_seq, True, seq_data["Position"], color)
             guess, rt = test
+
+            test_data["Trial"].append(trial_num)
+            test_data["Generated"].append(seq_data["Generated"])
+            test_data["Changed"].append(True)
+            test_data["Guess"].append(guess)
+            test_data["Surprise_Cond"].append(seq_data["Surprisal"])
+            test_data["Old_Tone"].append(seq[seq_data["Position"]-1])
+            test_data["Old_Tone_Surprise"].append(probs[seq_data["Position"]-1])
+            test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
+            test_data["New_Tone_Surprise"].append(alt_prob)
+            test_data["RT"].append(rt)

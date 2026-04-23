@@ -121,7 +121,7 @@ def ProductionTrial(tree, prob_tree):
 
     return path_tones, path_probs, alt_tones, alt_probs, RTs, col
 
-def TestTrial(seq, pos, col):
+def TestTrial(seq, change, pos, col):
     testMessage = visual.TextStim(win, text="Is the following melody the same as before? Press key", pos= [0, 0], color="black")
     testMessage.draw()
     win.flip()
@@ -134,8 +134,10 @@ def TestTrial(seq, pos, col):
     for i, tone in enumerate(seq):
         freq = ConvertFreq(seq[i])
         tone = sound.Sound(value=freq, secs=duration)
-        if i == pos - 1:
+        if i == pos - 1 and change:
             print("Noget med en form for eeg trigger her")
+        else:
+            print("Noget med en anden form for eeg trigger her")
         tone.play()
         core.wait(duration)
     
