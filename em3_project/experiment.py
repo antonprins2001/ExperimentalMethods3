@@ -8,3 +8,5 @@ from trial import Trial
 from data_collecter import DataManager
 from condition_manager import GenerateTrials
 
+path = "Sequence/sequences.csv"
+trial_seqs = GenerateTrials(path)
