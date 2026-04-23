@@ -3,8 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from settings import Settings
-from participant import Participant
+from settings import getSubjectCharacteristics, getSubjectInfo, getSettings, checkIfEscape
 from trial import ConvertFreq, MemoryTrial, ProductionTrial, TestTrial
 from data_collecter import CollectTrials
 from condition_manager import GenerateTrials
