@@ -3,9 +3,8 @@ import pandas as pd
 
 from settings import Settings
 from participant import Participant
-from block import Block
-from trial import Trial
-from data_collecter import DataManager
+from trial import ConvertFreq, MemoryTrial, ProductionTrial, TestTrial
+from data_collecter import CollectTrials
 from condition_manager import GenerateTrials
 
 path = "Sequence/sequences.csv"
