@@ -261,8 +261,6 @@ def CollectTrials(trial_seqs, subject_id):
         "Old_Tone_Surprise": [],
         "New_Tone": [],
         "New_Tone_Surprise": [],
-        "Playback_Time_Start": [],
-        "Playback_Time_Stop": [],
         "RT": []
     }
 
