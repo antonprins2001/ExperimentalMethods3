@@ -65,6 +65,12 @@ def MemoryTrial(sequence):
     colors = ["red", "blue", "cyan", "yellow", "pink", "green", "purple"]
     col = random.choice(colors)
 
+    tones = {}
+    for note in sequence:
+        freq = ConvertFreq(note)
+        if freq not in tones:
+            tones[note] = sound.Sound(value=freq, secs=duration, stereo=True, hamming=True)
+
     RTs = []
 
     square = visual.Rect(win,fillColor=col,size=[200, 200])
@@ -72,20 +78,15 @@ def MemoryTrial(sequence):
     win.flip()
 
     for i in range(1, 9, 1):
-        print("Playing " + str(i) + " tones")
 
         for j in range(i):
-            freq = ConvertFreq(sequence[j])
-            tone = sound.Sound(value=freq, secs=duration)
-            tone.play()
+            tones[sequence[j]].play()
             core.wait(duration)
 
         core.wait(0.5)
 
         for j in range(i):
-            freq = ConvertFreq(sequence[j])
-            tone = sound.Sound(value=freq, secs=duration)
-            tone.play()
+            tones[sequence[j]].play()
             core.wait(duration)
 
         clock.reset()
@@ -112,6 +113,13 @@ def ProductionTrial(tree, prob_tree, altposition):
     path_probs = [prob_tree[0]]
     alt_tones = [None]
     alt_probs = [None]
+
+    tones = {}
+    for note in tree:
+        freq = ConvertFreq(note)
+        if freq not in tones:
+            tones[note] = sound.Sound(value=freq, secs=duration, stereo=True, hamming=True)
+
 
     RTs = []
 
@@ -150,9 +158,7 @@ def ProductionTrial(tree, prob_tree, altposition):
         win.flip()
 
         for tone in path1:
-            freq = ConvertFreq(tone)
-            tone = sound.Sound(value=freq, secs=duration)
-            tone.play()
+            tones[tone].play()
             core.wait(duration)
         
         square.draw()
@@ -162,9 +168,7 @@ def ProductionTrial(tree, prob_tree, altposition):
         core.wait(0.5)
 
         for tone in path2:
-            freq = ConvertFreq(tone)
-            tone = sound.Sound(value=freq, secs=duration)
-            tone.play()
+            tones[tone].play()
             core.wait(duration)
 
         testMessage = visual.TextStim(win, text="Press M for the first version and Z for the second version", pos= [0, -150], color="black")
@@ -204,6 +208,14 @@ def TestTrial(seq, change, pos, col):
     testMessage = visual.TextStim(win, text="Is the following melody the same as before? Press key", pos= [0, 0], color="black")
     testMessage.draw()
     win.flip()
+
+    tones = {}
+    for note in seq:
+        freq = ConvertFreq(note)
+        if freq not in tones:
+            tones[note] = sound.Sound(value=freq, secs=duration, stereo=True, hamming=True)
+
+
     event.waitKeys()
 
     square = visual.Rect(win,fillColor=col,size=[200, 200])
@@ -211,13 +223,11 @@ def TestTrial(seq, change, pos, col):
     win.flip()
 
     for i, tone in enumerate(seq):
-        freq = ConvertFreq(seq[i])
-        tone = sound.Sound(value=freq, secs=duration)
         if i == pos - 1 and change:
             print("Noget med en form for eeg trigger her")
         else:
             print("Noget med en anden form for eeg trigger her")
-        tone.play()
+        tones[tone].play()
         core.wait(duration)
     
     testMessage = visual.TextStim(win, text="Was it the same melody as before?, Press M for yes and Z for no", pos= [0, -150], color="black")
@@ -279,6 +289,7 @@ def CollectTrials(trial_seqs, subject_id):
     }
 
     for trial_num, seq_data in enumerate(trial_seqs):
+
         if seq_data["Generated"]:
             trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"], altposition = seq_data["Position"])
             path_tones, path_probs, alt_tones, alt_probs, RTs, color, altpos = trial
@@ -298,9 +309,6 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(path_probs[i])
                 trial_data["Alternative"].append(alt_tones[i])
                 trial_data["Alt_Surprise"].append(alt_probs[i])
-                print("i=",i)
-                print("len(RTs)=",len(RTs))
-                print("RTs=",RTs)
                 trial_data["RT"].append(RTs[i])
 
             seq = path_tones
@@ -320,9 +328,6 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(seq_data["Probabilites"][i])
                 trial_data["Alternative"].append(None)
                 trial_data["Alt_Surprise"].append(None)
-                print("i=",i)
-                print("len(RTs)=",len(RTs))
-                print("RTs=",RTs)
                 trial_data["RT"].append(RTs[i])
         
             seq = seq_data["Sequence"]
@@ -359,8 +364,10 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
             test_data["New_Tone_Surprise"].append(alt_prob)
             test_data["RT"].append(rt)
+
         pd.DataFrame(trial_data).to_csv(trial_file, index=False)
         pd.DataFrame(test_data).to_csv(test_file, index=False)
+
     return test_data, trial_data
 
 path = "Sequence/sequences.csv"
