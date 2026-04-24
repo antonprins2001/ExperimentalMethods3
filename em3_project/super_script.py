@@ -14,8 +14,8 @@ from condition_manager import GenerateTrials
 def getSettings():
     fullscreen = False
     window_size = (1200, 800)
-    bg_color = "blue"
-    text_color = "white"
+    bg_color = "lightblue"
+    text_color = "black"
 
     duration = 0.4
 
@@ -25,14 +25,14 @@ def getSettings():
 
 def getSubjectInfo():
     info = {'FID': 0}
-    dlg = gui.DlgFromDict(dictionary=info, title='n-Armed Bandit Experiment')
+    dlg = gui.DlgFromDict(dictionary=info, title = 'Music and Memory Experiment')
     if not dlg.OK:
         core.quit()
     return info['FID']
 
 def getSubjectCharacteristics():
     info = {'Age': 0, 'Gender (F/M/Other)': ' '}
-    dlg = gui.DlgFromDict(dictionary=info, title='n-Armed Bandit Experiment')
+    dlg = gui.DlgFromDict(dictionary=info, title = 'Music and Memory Experiment')
     if not dlg.OK:
         core.quit()
     return info['Age'], info['Gender (F/M/Other)']
@@ -57,6 +57,14 @@ def GenerateTrials(path):
     return trial_data
 
 import random
+
+def introMessage():
+    intro = visual.TextStim(win, text= "Welcome to the experiment! You will in the following hour be doing both memorization of a small 8-tones melodies, " \
+    "aswell as producong your own melody thorugh 8 binary choices between two tones. You job is to remember the melodies, and afterwards determine whether it has been changed or not." \
+    "We start off with som practice trials. Press any key to start.", pos= [0, 0], color=text_color)
+    intro.draw()
+    win.flip()
+    event.waitKeys()
 
 def ConvertFreq(tone):
     return round(440 * (2**((int(tone) - 69)/12)), 3)
@@ -92,7 +100,7 @@ def MemoryTrial(sequence):
         event.waitKeys() #Måske noget andet
         RTs.append(clock.getTime())
 
-    testMessage = visual.TextStim(win, text="Playing the full melody, Press key", pos= [0, -150], color="black")
+    testMessage = visual.TextStim(win, text="Playing the full melody, Press key", pos= [0, -150], color=text_color)
     square.draw()
     testMessage.draw()
     win.flip()
@@ -121,8 +129,8 @@ def ProductionTrial(tree, prob_tree, altposition):
     col = random.choice(colors)
 
     square = visual.Rect(win,fillColor=col,size=[200, 200])
-    firstMSG = visual.TextStim(win, text="First version", pos= [0, -150], color="black")
-    secondMSG = visual.TextStim(win, text="Second version", pos= [0, -150], color="black")
+    firstMSG = visual.TextStim(win, text="First version", pos= [0, -150], color=text_color)
+    secondMSG = visual.TextStim(win, text="Second version", pos= [0, -150], color=text_color)
 
     square.draw()
     win.flip()
@@ -167,7 +175,7 @@ def ProductionTrial(tree, prob_tree, altposition):
             tone.play()
             core.wait(duration)
 
-        testMessage = visual.TextStim(win, text="Press M for the first version and Z for the second version", pos= [0, -150], color="black")
+        testMessage = visual.TextStim(win, text="Press M for the first version and Z for the second version", pos= [0, -150], color=text_color)
         square.draw()
         testMessage.draw()
         win.flip()
@@ -201,7 +209,7 @@ def ProductionTrial(tree, prob_tree, altposition):
     return path_tones, path_probs, alt_tones, alt_probs, RTs, col, altpos
 
 def TestTrial(seq, change, pos, col):
-    testMessage = visual.TextStim(win, text="Is the following melody the same as before? Press key", pos= [0, 0], color="black")
+    testMessage = visual.TextStim(win, text="Is the following melody the same as before? Press key", pos= [0, 0], color=text_color)
     testMessage.draw()
     win.flip()
     event.waitKeys()
@@ -220,7 +228,7 @@ def TestTrial(seq, change, pos, col):
         tone.play()
         core.wait(duration)
     
-    testMessage = visual.TextStim(win, text="Was it the same melody as before?, Press M for yes and Z for no", pos= [0, -150], color="black")
+    testMessage = visual.TextStim(win, text="Was it the same melody as before?, Press M for yes and Z for no", pos= [0, -150], color=text_color)
     square.draw()
     testMessage.draw()
     win.flip()
