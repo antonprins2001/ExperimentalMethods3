@@ -46,7 +46,7 @@ def GenerateTrials(path):
     df_order = pd.read_csv(path)
     df = df_order.sample(frac=1)
 
-    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives"]:
+    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
         df[col] = df[col].apply(ast.literal_eval)
 
     trial_data = []
