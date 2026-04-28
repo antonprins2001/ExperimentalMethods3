@@ -71,22 +71,24 @@ IDyOM-afledt per-tone surprisal er den centrale computationelle variabel.
 ```bash
 source .venv/bin/activate
 cd em3_project
-python main.py
+python super_script copy.py   # Working version — use this
 ```
 
-Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder er installeret direkte i `.venv/`.
+`main.py` + `experiment.py` er i øjeblikket brudt (se Known Issues). Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).
 
 ## Kodearkitektur
 
 ### PsychoPy Experiment (`em3_project/`)
 
-- [main.py](em3_project/main.py) — Entry point; initialiserer PsychoPy-vindue og starter eksperimentet
-- [experiment.py](em3_project/experiment.py) — Hoved-flowkontroller; importerer `DataManager` fra `data_manager.py` som **ikke eksisterer endnu** (giver ImportError ved kørsel)
-- [settings.py](em3_project/settings.py) — Central config: vindue (1200×800), timing (`STIMULUS_TIME=1.0s`, `BREAK_TIME=0.5s`), responstastar (`left`/`right`), `N_BLOCKS=2`
-- [participant.py](em3_project/participant.py) — Deltager-datamodel (id + betingelse)
-
-**Stub-filer (tomme, ikke implementeret endnu):**
-[block.py](em3_project/block.py), [trial.py](em3_project/trial.py), [condition_manager.py](em3_project/condition_manager.py), [data_collecter.py](em3_project/data_collecter.py)
+- [super_script copy.py](em3_project/super_script copy.py) — **De-facto entry point** (387 linjer). Konsoliderer alt eksperimentflow i ét script: trial-funktioner, datacollection, gemmer `data/{subject_id}_trial_data.csv` og `data/{subject_id}_test_data.csv`. Fikser response-logic bugs fra `trial.py`. Brug dette.
+- [main.py](em3_project/main.py) — Tiltænkt entry point; kalder `Experiment().run()` — **brudt** (ingen Experiment-klasse i experiment.py).
+- [experiment.py](em3_project/experiment.py) — Knap 20 linjer top-level kode uden Experiment-klasse; kører dog partialt (loader sequences, opretter vindue, kører trials). Matcher ikke `main.py`s interface.
+- [settings.py](em3_project/settings.py) — Config-funktioner: `getSettings()` (vindue 1200×800, bg=blue, duration=0.4s, keys=["z","m"]), `getSubjectInfo()`, `getSubjectCharacteristics()`, `checkIfEscape()`. Har dangling kode linje 36-37.
+- [trial.py](em3_project/trial.py) — `ConvertFreq`, `MemoryTrial`, `ProductionTrial`, `TestTrial`. Har response-key logic bug (linje ~108). Afhænger af globale variabler (`win`, `duration`, `clock`).
+- [condition_manager.py](em3_project/condition_manager.py) — `GenerateTrials(path)`: loader sequences.csv og shuffler. **Kritisk bug linje 8**: `df.loc[0]` skal være `df.loc[i]` — genererer samme trial N gange.
+- [data_collecter.py](em3_project/data_collecter.py) — `CollectTrials(trial_seqs)`: orkestrerer trial-flow, kalder Memory/ProductionTrial + TestTrial, returnerer to DataFrames.
+- [participant.py](em3_project/participant.py) — Minimal datamodel (id + gruppe).
+- [block.py](em3_project/block.py) — Tom stub.
 
 ### Stimulus-generering (`em3_project/Sequence/`)
 
@@ -100,6 +102,34 @@ Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afh�
 - MIDI-parsing: `pretty_midi`
 - Model-output: JSON
 - Eksperimentel interface: HTML/JS mockup i [design_mockup.html](em3_project/design_mockup.html); endelig platform ikke fastlagt
+
+## Data-skemaer
+
+**Input til eksperiment:** `Sequence/sequences.csv` (genereret af `sequences.ipynb`)
+
+| Kolonne | Type | Beskrivelse |
+|---------|------|-------------|
+| `Generated` | bool | True = 2AFC-betingelse |
+| `Change` | bool | True = probe har ændret tone |
+| `Position` | int | Hvilken tone (0-7) er ændret |
+| `Surprisal` | str (bool-tuple) | IC-betingelse: `(True,False)` = ns→s osv. |
+| `Probe` | int | MIDI-notenummer for probe-tonen |
+| `Sequence` | list[int] | 8 MIDI-noter |
+| `Probabilites` | list[float] | Surprisal-værdier per tone |
+| `Alternatives` | list[tuple] | `(tone, prob)` alternativ ved change-position |
+
+**Output per deltager** (gemt i `data/`):
+- `{id}_trial_data.csv`: `Trial, Generated, Changed, Position, Tone, Surprise, Alternative, Alt_Surprise, RT`
+- `{id}_test_data.csv`: `Trial, Generated, Changed, Guess, Surprise_Cond, Old_Tone, Old_Tone_Surprise, New_Tone, New_Tone_Surprise, RT`
+
+## Known Issues (aktive bugs)
+
+| Fil | Linje | Problem |
+|-----|-------|---------|
+| `condition_manager.py` | 8 | `df.loc[0]` skal være `df.loc[i]` — alle trials er identiske |
+| `trial.py` | ~108 | `not "z" in keys or "m" in keys` er altid True — response-logic er brudt (fikset i `super_script copy.py`) |
+| `experiment.py` | — | Ingen `Experiment`-klasse; matcher ikke `main.py` |
+| `settings.py` | 36-37 | DataFrame-save uden kontekst — krasjer ved import |
 
 ## Vigtige advarsler
 

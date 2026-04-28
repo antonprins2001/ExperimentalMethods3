@@ -46,7 +46,7 @@ def GenerateTrials(path):
     df_order = pd.read_csv(path)
     df = df_order.sample(frac=1)
 
-    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives"]:
+    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
         df[col] = df[col].apply(ast.literal_eval)
 
     trial_data = []
@@ -108,9 +108,10 @@ def MemoryTrial(sequence):
 
     return RTs, col
 
-def ProductionTrial(tree, prob_tree, altposition):
+def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
     path_tones = [tree[0]]
     path_probs = [prob_tree[0]]
+    path_entropy = [entropy_tree[0]]
     alt_tones = [None]
     alt_probs = [None]
     altpos = -1
@@ -125,35 +126,25 @@ def ProductionTrial(tree, prob_tree, altposition):
     trial_colors = ["red", "blue", "cyan", "yellow", "pink", "green", "purple"]
     col = random.choice(trial_colors)
 
-    # Mockup color tokens
     C_PAGE    = [0.867, 0.851, 0.812]
     C_CARD    = 'white';   C_BD_CARD = '#dddddd'
-    C_BG_SEC  = '#f5f4f0'; C_TX_SEC  = '#5f5e5a'; C_BD_SEC  = '#dedcda'
-    C_BG_SUCC = '#eaf3de'; C_TX_SUCC = '#3b6d11'; C_BD_SUCC = '#b6d48e'
-    C_BG_WARN = '#faeeda'; C_TX_WARN = '#854f0b'; C_BD_WARN = '#e0a96a'
+    C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
+    C_BG_SUCC = '#eaf3de'; C_BD_SUCC = '#b6d48e'
+    C_BG_WARN = '#faeeda'; C_BD_WARN = '#e0a96a'
     C_BG_A    = '#e6f1fb'; C_TX_A    = '#185fa5'; C_BD_A    = '#85b7eb'
     C_BG_B    = '#faeeda'; C_TX_B    = '#854f0b'; C_BD_B    = '#e0a96a'
-    C_TX_PRI  = '#1a1a18'
 
     orig_bg = list(win.color)
     win.color = C_PAGE
 
-    card      = visual.Rect(win, width=700, height=580, pos=(0, 0),
-                            fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
-    badge_bg  = visual.Rect(win, width=236, height=26, pos=(0, 255),
-                            fillColor=C_BG_SUCC, lineColor=C_BD_SUCC, lineWidth=1)
-    badge_lbl = visual.TextStim(win, text='Encoding — genereret',
-                                pos=(0, 255), color=C_TX_SUCC, height=12)
-    subtitle    = visual.TextStim(win,
-                    text='Vælg tonerne én ad gangen. Melodien opbygges og afspilles løbende.',
-                    pos=(0, 210), color=C_TX_SEC, height=13)
-    counter_txt = visual.TextStim(win, text='', pos=(0, 175), color=C_TX_SEC, height=12)
+    card = visual.Rect(win, width=700, height=580, pos=(0, 0),
+                       fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
 
-    # Option headline pill — prominent A/B label above tiles
+    # Option headline pill — A/B label above tiles
     opt_pill_bg  = visual.Rect(win, width=260, height=36, pos=(0, 130),
                                fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
     opt_pill_lbl = visual.TextStim(win, text='', pos=(0, 130),
-                                   color=C_TX_SEC, height=15)
+                                   color=C_BG_SEC, height=15)
 
     # 8 sequence tiles (46×46, spacing 60 px)
     TILE_STEP = 60
@@ -161,14 +152,12 @@ def ProductionTrial(tree, prob_tree, altposition):
     tiles = [visual.Rect(win, width=46, height=46, pos=(x, 70),
                          fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
              for x in tile_xs]
-    tile_nums = [visual.TextStim(win, text=str(i + 1), pos=(tile_xs[i], 70),
-                                 color=C_TX_SEC, height=13)
-                 for i in range(8)]
 
-    hint_txt = visual.TextStim(win, text='Melodien opbygges og gentages 2× i alt',
-                               pos=(0, 5), color=C_TX_SEC, height=12)
+    # Orange hollow border shown around whichever tile is playing
+    orange_border = visual.Rect(win, width=54, height=54, pos=(0, 70),
+                                fillColor=None, lineColor='orange', lineWidth=3)
 
-    # Color-coded choice buttons: A = blue, B = amber
+    # Choice buttons: A = blue (left/Z), B = amber (right/M)
     btn_l_bg  = visual.Rect(win, width=200, height=50, pos=(-115, -115),
                              fillColor=C_BG_A, lineColor=C_BD_A, lineWidth=1)
     btn_r_bg  = visual.Rect(win, width=200, height=50, pos=( 115, -115),
@@ -180,13 +169,9 @@ def ProductionTrial(tree, prob_tree, altposition):
 
     color_cue = visual.Rect(win, fillColor=col, size=[36, 36], pos=(0, -255))
 
-    def draw_scene(n_green, active_idx, opt_header, opt_color, show_buttons, counter=''):
+    def draw_scene(n_green, active_idx, opt_header, opt_color, show_buttons):
         card.draw()
-        badge_bg.draw(); badge_lbl.draw()
-        subtitle.draw()
-        counter_txt.text = counter; counter_txt.draw()
 
-        # Option headline pill
         if opt_header:
             if opt_color == 'A':
                 opt_pill_bg.fillColor = C_BG_A; opt_pill_bg.lineColor = C_BD_A
@@ -196,61 +181,68 @@ def ProductionTrial(tree, prob_tree, altposition):
                 opt_pill_lbl.color = C_TX_B
             else:
                 opt_pill_bg.fillColor = C_BG_SEC; opt_pill_bg.lineColor = C_BD_SEC
-                opt_pill_lbl.color = C_TX_SEC
+                opt_pill_lbl.color = C_BG_SEC
             opt_pill_lbl.text = opt_header
             opt_pill_bg.draw(); opt_pill_lbl.draw()
 
-        # 8 tiles — only active_idx lights up; confirmed tiles stay green
-        for k, (t, lbl) in enumerate(zip(tiles, tile_nums)):
-            if k == active_idx:
+        for k, t in enumerate(tiles):
+            if k == active_idx and k == n_green:
+                # New tile: option color (blue for A, amber for B)
                 if opt_color == 'A':
-                    t.fillColor = C_BG_A; t.lineColor = C_BD_A; lbl.color = C_TX_A
+                    t.fillColor = C_BG_A; t.lineColor = C_BD_A
                 elif opt_color == 'B':
-                    t.fillColor = C_BG_B; t.lineColor = C_BD_B; lbl.color = C_TX_B
+                    t.fillColor = C_BG_B; t.lineColor = C_BD_B
                 else:
-                    t.fillColor = C_BG_WARN; t.lineColor = C_BD_WARN; lbl.color = C_TX_WARN
+                    t.fillColor = C_BG_WARN; t.lineColor = C_BD_WARN
             elif k < n_green:
-                t.fillColor = C_BG_SUCC; t.lineColor = C_BD_SUCC; lbl.color = C_TX_SUCC
+                # Confirmed tiles: always green (orange border added below if active)
+                t.fillColor = C_BG_SUCC; t.lineColor = C_BD_SUCC
             else:
-                t.fillColor = C_BG_SEC; t.lineColor = C_BD_SEC; lbl.color = C_TX_SEC
-            t.draw(); lbl.draw()
+                t.fillColor = C_BG_SEC; t.lineColor = C_BD_SEC
+            t.draw()
 
-        hint_txt.draw()
+        # Orange hollow border around the currently playing tile
+        if active_idx >= 0:
+            orange_border.pos = (tile_xs[active_idx], 70)
+            orange_border.draw()
+
         if show_buttons:
             btn_l_bg.draw(); btn_l_txt.draw()
             btn_r_bg.draw(); btn_r_txt.draw()
         color_cue.draw()
         win.flip()
 
-    def play_option(path, n_confirmed, opt_label, opt_color, counter):
-        # Confirmed tones play without tile animation (tiles stay green)
+    def play_option(path, n_confirmed, opt_label, opt_color):
         for j in range(n_confirmed):
-            draw_scene(n_green=n_confirmed, active_idx=-1,
+            draw_scene(n_green=n_confirmed, active_idx=j,
                        opt_header=opt_label, opt_color=opt_color,
-                       show_buttons=False, counter=counter)
+                       show_buttons=False)
             tones[path[j]].play()
             core.wait(duration)
-        # New tone — only new tile lights up in option's color
         draw_scene(n_green=n_confirmed, active_idx=n_confirmed,
                    opt_header=opt_label, opt_color=opt_color,
-                   show_buttons=False, counter=counter)
+                   show_buttons=False)
         tones[path[n_confirmed]].play()
         core.wait(duration)
-        # New tile returns to pending after playback
-        draw_scene(n_green=n_confirmed, active_idx=-1,
-                   opt_header='', opt_color=None,
-                   show_buttons=False, counter=counter)
+        # No trailing draw — buttons appear immediately after option B finishes
 
-    def play_animated(path, n_confirmed, counter=''):
+    def play_root_tone(note):
+        draw_scene(n_green=1, active_idx=0, opt_header='', opt_color=None, show_buttons=False)
+        tones[note].play()
+        core.wait(duration)
+        core.wait(1.0)
+        draw_scene(1, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
+
+    def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
-            draw_scene(n_green=j, active_idx=j, opt_header='', opt_color=None,
-                       show_buttons=False, counter=counter)
+            draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
+                       show_buttons=False)
             tones[note].play()
             core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
-                   show_buttons=False, counter=counter)
+                   show_buttons=False)
 
-    play_animated(path_tones, n_confirmed=1, counter='Vælg tone 2 af 8')
+    play_root_tone(path_tones[0])
     RTs.append(0.0)
 
     parent = 0
@@ -260,22 +252,21 @@ def ProductionTrial(tree, prob_tree, altposition):
         child2 = 2 * (parent + 1)
         altpos = -1
         n_confirmed = len(path_tones)
-        counter = f'Vælg tone {n_confirmed + 1} af 8'
 
-        play_option(path_tones + [tree[child1]], n_confirmed,
-                    '▶ Option A', 'A', counter)
+        play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
         core.wait(0.4)
-        play_option(path_tones + [tree[child2]], n_confirmed,
-                    '▶ Option B', 'B', counter)
+        play_option(path_tones + [tree[child2]], n_confirmed, '▶ Option B', 'B')
 
         draw_scene(n_confirmed, active_idx=-1, opt_header='',
-                   opt_color=None, show_buttons=True, counter=counter)
+                   opt_color=None, show_buttons=True)
         clock.reset()
 
+        event.clearEvents()
         response = False
         while not response:
-            checkIfEscape()
-            keys = event.getKeys(keyList=['z', 'm'])
+            keys = event.getKeys(keyList=['z', 'm', 'escape'])
+            if 'escape' in keys:
+                core.quit()
             if 'z' in keys:
                 choice = child1; alt = child2; response = True
             if 'm' in keys:
@@ -289,27 +280,24 @@ def ProductionTrial(tree, prob_tree, altposition):
         parent = choice
         path_tones.append(tree[choice])
         path_probs.append(prob_tree[choice])
+        path_entropy.append(entropy_tree[choice])
         alt_tones.append(tree[alt])
         alt_probs.append(prob_tree[alt])
 
     for rep in range(2):
-        play_animated(path_tones, n_confirmed=8,
-                      counter=f'Melodien afspilles ({rep + 1}/2)...')
+        play_animated(path_tones, n_confirmed=8)
         if rep == 0:
             core.wait(0.3)
 
-    draw_scene(8, active_idx=-1, opt_header='', opt_color=None,
-               show_buttons=False, counter='Alle 8 toner valgt')
+    draw_scene(8, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
     win.color = orig_bg
-    return path_tones, path_probs, alt_tones, alt_probs, RTs, col, altpos
+    return path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, col, altpos
 
 def TestTrial(seq, change, pos, col):
-    # Mockup color tokens
     C_PAGE    = [0.867, 0.851, 0.812]
     C_CARD    = 'white';   C_BD_CARD = '#dddddd'
-    C_BG_SEC  = '#f5f4f0'; C_TX_SEC  = '#5f5e5a'; C_BD_SEC  = '#dedcda'
-    C_BG_A    = '#e6f1fb'; C_TX_A    = '#185fa5'; C_BD_A    = '#85b7eb'
-    C_BG_DGR  = '#fcebeb'; C_TX_DGR  = '#a32d2d'; C_BD_DGR  = '#f09595'
+    C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
+    C_BG_SUCC = '#eaf3de'; C_BD_SUCC = '#b6d48e'
     C_TX_PRI  = '#1a1a18'
 
     tones = {}
@@ -321,56 +309,55 @@ def TestTrial(seq, change, pos, col):
     orig_bg = list(win.color)
     win.color = C_PAGE
 
-    card      = visual.Rect(win, width=700, height=580, pos=(0, 0),
-                            fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
-    badge_bg  = visual.Rect(win, width=76, height=26, pos=(0, 255),
-                            fillColor=C_BG_DGR, lineColor=C_BD_DGR, lineWidth=1)
-    badge_lbl = visual.TextStim(win, text='Test', pos=(0, 255),
-                                color=C_TX_DGR, height=12)
-    heading   = visual.TextStim(win, text='Er dette den samme melodi som du hørte?',
-                                pos=(0, 195), color=C_TX_PRI, height=17)
-    subhead   = visual.TextStim(win, text='', pos=(0, 150), color=C_TX_SEC, height=13)
+    card = visual.Rect(win, width=700, height=580, pos=(0, 0),
+                       fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
 
     TILE_STEP = 60
     tile_xs = [-(7 * TILE_STEP) / 2 + i * TILE_STEP for i in range(8)]
     tiles = [visual.Rect(win, width=46, height=46, pos=(x, 70),
                          fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
              for x in tile_xs]
-    tile_nums = [visual.TextStim(win, text=str(i + 1), pos=(tile_xs[i], 70),
-                                 color=C_TX_SEC, height=13)
-                 for i in range(8)]
 
-    status_txt  = visual.TextStim(win, text='', pos=(0, 10), color=C_TX_SEC, height=13)
+    # Orange hollow border shown around whichever tile is playing
+    orange_border = visual.Rect(win, width=54, height=54, pos=(0, 70),
+                                fillColor=None, lineColor='orange', lineWidth=3)
+
+    # z = left = "Ja, samme", m = right = "Nej, forskellig"
     btn_yes_bg  = visual.Rect(win, width=210, height=50, pos=(-120, -85),
                                fillColor=C_CARD, lineColor='#aaaaaa', lineWidth=1)
     btn_no_bg   = visual.Rect(win, width=210, height=50, pos=( 120, -85),
                                fillColor=C_CARD, lineColor='#aaaaaa', lineWidth=1)
-    btn_yes_txt = visual.TextStim(win, text='Ja, samme  (M)', pos=(-120, -85),
+    btn_yes_txt = visual.TextStim(win, text='Ja, samme  [Z]', pos=(-120, -85),
                                   color=C_TX_PRI, height=15)
-    btn_no_txt  = visual.TextStim(win, text='Nej, forskellig  (Z)', pos=( 120, -85),
+    btn_no_txt  = visual.TextStim(win, text='Nej, forskellig  [M]', pos=( 120, -85),
                                   color=C_TX_PRI, height=15)
     col_cue = visual.Rect(win, fillColor=col, size=[36, 36], pos=(0, -220))
+    heading = visual.TextStim(win, text='Is this the same melody as you heard?',
+                              pos=(0, 195), color=C_TX_PRI, height=17)
+    prompt_txt = visual.TextStim(win, text='Press any key to listen to the melody',
+                                 pos=(0, 155), color=C_TX_PRI, height=13)
 
-    def draw_test(active_idx, status, show_buttons, subheading=''):
+    def draw_test(active_idx, show_buttons, show_prompt=False):
         card.draw()
-        badge_bg.draw(); badge_lbl.draw()
         heading.draw()
-        subhead.text = subheading; subhead.draw()
-        for k, (t, lbl) in enumerate(zip(tiles, tile_nums)):
+        if show_prompt:
+            prompt_txt.draw()
+        for k, t in enumerate(tiles):
             if k == active_idx:
-                t.fillColor = C_BG_A; t.lineColor = C_BD_A; lbl.color = C_TX_A
+                t.fillColor = C_BG_SUCC; t.lineColor = C_BD_SUCC
             else:
-                t.fillColor = C_BG_SEC; t.lineColor = C_BD_SEC; lbl.color = C_TX_SEC
-            t.draw(); lbl.draw()
-        status_txt.text = status; status_txt.draw()
+                t.fillColor = C_BG_SEC; t.lineColor = C_BD_SEC
+            t.draw()
+        if active_idx >= 0:
+            orange_border.pos = (tile_xs[active_idx], 70)
+            orange_border.draw()
         if show_buttons:
             btn_yes_bg.draw(); btn_yes_txt.draw()
             btn_no_bg.draw(); btn_no_txt.draw()
         col_cue.draw()
         win.flip()
 
-    draw_test(active_idx=-1, status='', show_buttons=False,
-              subheading='Tryk en tast for at lytte')
+    draw_test(active_idx=-1, show_buttons=False, show_prompt=True)
     event.waitKeys()
 
     for i, note in enumerate(seq):
@@ -378,23 +365,23 @@ def TestTrial(seq, change, pos, col):
             print("Noget med en form for eeg trigger her")
         else:
             print("Noget med en anden form for eeg trigger her")
-        draw_test(active_idx=i, status='▶ Afspiller...', show_buttons=False,
-                  subheading='Lyt opmærksomt')
+        draw_test(active_idx=i, show_buttons=False)
         tones[note].play()
         core.wait(duration)
 
-    draw_test(active_idx=-1, status='', show_buttons=True,
-              subheading='Var det den samme melodi?')
+    draw_test(active_idx=-1, show_buttons=True)
+    event.clearEvents()
     clock.reset()
 
     response = False
     while not response:
-        checkIfEscape()
-        keys = event.getKeys(keyList=['z', 'm'])
+        keys = event.getKeys(keyList=['z', 'm', 'escape'])
+        if 'escape' in keys:
+            core.quit()
         if 'z' in keys:
-            guess = True; response = True
+            guess = True; response = True   # z = left = Ja, samme
         if 'm' in keys:
-            guess = False; response = True
+            guess = False; response = True  # m = right = Nej, forskellig
 
     rt = clock.getTime()
     win.color = orig_bg
@@ -421,6 +408,7 @@ def CollectTrials(trial_seqs, subject_id):
         "Old_Tone_Surprise": [],
         "New_Tone": [],
         "New_Tone_Surprise": [],
+        "Entropy": [],
         "RT": []
     }
 
@@ -433,14 +421,16 @@ def CollectTrials(trial_seqs, subject_id):
         "Surprise": [],
         "Alternative": [],
         "Alt_Surprise": [],
+        "Entropy": [],
         "RT": []
     }
 
     for trial_num, seq_data in enumerate(trial_seqs):
 
         if seq_data["Generated"]:
-            trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"], altposition = seq_data["Position"])
-            path_tones, path_probs, alt_tones, alt_probs, RTs, color, altpos = trial
+            trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
+                                    entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
 
             os.makedirs("data", exist_ok=True)
             trial_file = f"data/{subject_id}_trial_data.csv"
@@ -455,13 +445,15 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(path_probs[i])
                 trial_data["Alternative"].append(alt_tones[i])
                 trial_data["Alt_Surprise"].append(alt_probs[i])
+                trial_data["Entropy"].append(path_entropy[i])
                 trial_data["RT"].append(RTs[i])
 
             seq = path_tones
             probs = path_probs
+            ents = path_entropy
 
         else: #Memorization task
-            trial = MemoryTrial(seq=seq_data["Sequence"])
+            trial = MemoryTrial(sequence=seq_data["Sequence"])
             RTs, color = trial
             altpos = 0
 
@@ -474,10 +466,12 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(seq_data["Probabilites"][i])
                 trial_data["Alternative"].append(None)
                 trial_data["Alt_Surprise"].append(None)
+                trial_data["Entropy"].append(seq_data["Entropy"][i])
                 trial_data["RT"].append(RTs[i])
-        
+
             seq = seq_data["Sequence"]
             probs = seq_data["Probabilites"]
+            ents = seq_data["Entropy"]
 
         if not seq_data["Change"]:
             test = TestTrial(seq, False, -1, color)
@@ -492,9 +486,10 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Old_Tone_Surprise"].append(None)
             test_data["New_Tone"].append(None)
             test_data["New_Tone_Surprise"].append(None)
+            test_data["Entropy"].append(None)
             test_data["RT"].append(rt)
 
-        
+
         else: #Alternative sequence
             new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
             test = TestTrial(new_seq, True, seq_data["Position"], color)
@@ -509,6 +504,7 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Old_Tone_Surprise"].append(probs[seq_data["Position"]-1])
             test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
             test_data["New_Tone_Surprise"].append(alt_prob)
+            test_data["Entropy"].append(ents[seq_data["Position"]-1])
             test_data["RT"].append(rt)
 
         pd.DataFrame(trial_data).to_csv(trial_file, index=False)
