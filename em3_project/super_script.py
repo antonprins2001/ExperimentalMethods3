@@ -116,9 +116,10 @@ def MemoryTrial(sequence):
 
     return RTs, col
 
-def ProductionTrial(tree, prob_tree, altposition):
+def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
     path_tones = [tree[0]]
     path_probs = [prob_tree[0]]
+    path_entropy = [entropy_tree[0]]
     alt_tones = [None]
     alt_probs = [None]
 
@@ -206,11 +207,12 @@ def ProductionTrial(tree, prob_tree, altposition):
     
         path_tones.append(tree[choice])
         path_probs.append(prob_tree[choice])
+        path_entropy.append(entropy_tree[choice])
 
         alt_tones.append(tree[alt])
         alt_probs.append(prob_tree[alt])
 
-    return path_tones, path_probs, alt_tones, alt_probs, RTs, col, altpos
+    return path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, col, altpos
 
 def TestTrial(seq, change, pos, col):
     testMessage = visual.TextStim(win, text="Is the following melody the same as before? Press key", pos= [0, 0], color=text_color)
@@ -279,6 +281,7 @@ def CollectTrials(trial_seqs, subject_id):
         "Old_Tone_Surprise": [],
         "New_Tone": [],
         "New_Tone_Surprise": [],
+        "Entropy": [],
         "RT": []
     }
 
@@ -291,14 +294,15 @@ def CollectTrials(trial_seqs, subject_id):
         "Surprise": [],
         "Alternative": [],
         "Alt_Surprise": [],
+        "Entropy": [],
         "RT": []
     }
 
     for trial_num, seq_data in enumerate(trial_seqs):
 
         if seq_data["Generated"]:
-            trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"], altposition = seq_data["Position"])
-            path_tones, path_probs, alt_tones, alt_probs, RTs, color, altpos = trial
+            trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"], entropy_tree=seq_data["Entropy"], altposition = seq_data["Position"])
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
 
             os.makedirs("data", exist_ok=True)
             trial_file = f"data/{subject_id}_trial_data.csv"
@@ -313,13 +317,15 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(path_probs[i])
                 trial_data["Alternative"].append(alt_tones[i])
                 trial_data["Alt_Surprise"].append(alt_probs[i])
+                trial_data["Entropy"].append(path_entropy[i])
                 trial_data["RT"].append(RTs[i])
 
             seq = path_tones
             probs = path_probs
+            ents = path_entropy
 
         else: #Memorization task
-            trial = MemoryTrial(seq=seq_data["Sequence"])
+            trial = MemoryTrial(sequence=seq_data["Sequence"])
             RTs, color = trial
             altpos = 0
 
@@ -332,10 +338,12 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(seq_data["Probabilites"][i])
                 trial_data["Alternative"].append(None)
                 trial_data["Alt_Surprise"].append(None)
+                trial_data["Entropy"].append(seq_data["Entropy"][i])
                 trial_data["RT"].append(RTs[i])
         
             seq = seq_data["Sequence"]
             probs = seq_data["Probabilites"]
+            ents = seq_data["Entropy"]
 
         if not seq_data["Change"]:
             test = TestTrial(seq, False, -1, color)
@@ -350,6 +358,7 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Old_Tone_Surprise"].append(None)
             test_data["New_Tone"].append(None)
             test_data["New_Tone_Surprise"].append(None)
+            test_data["Entropy"].append(None)
             test_data["RT"].append(rt)
 
         
@@ -367,6 +376,7 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Old_Tone_Surprise"].append(probs[seq_data["Position"]-1])
             test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
             test_data["New_Tone_Surprise"].append(alt_prob)
+            test_data["Entropy"].append(ents[seq_data["Position"]-1])
             test_data["RT"].append(rt)
 
         pd.DataFrame(trial_data).to_csv(trial_file, index=False)
