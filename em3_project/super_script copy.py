@@ -462,9 +462,9 @@ def TestTrial(seq, change, pos, col):
         if 'escape' in keys:
             core.quit()
         if 'z' in keys:
-            guess = True; response = True   # z = left = Ja, samme
+            guess = False; response = True   # z = left = Ja, samme
         if 'm' in keys:
-            guess = False; response = True  # m = right = Nej, forskellig
+            guess = True; response = True  # m = right = Nej, forskellig
 
     rt = clock.getTime()
     win.color = orig_bg
