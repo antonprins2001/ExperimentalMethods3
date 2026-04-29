@@ -1,3 +1,2 @@
-Trial,Generated,Changed,Guess,Surprise_Cond,Old_Tone,Old_Tone_Surprise,New_Tone,New_Tone_Surprise,RT
-0,True,True,True,"(True, False)",67,0.0347107438016529,67,0.30048255588218986,5.148006785000234
-1,True,True,True,"(True, False)",67,0.0347107438016529,67,0.30048255588218986,0.5917603439997947
+Trial,Generated,Changed,Guess,Surprise_Cond,Old_Tone,Old_Tone_Surprise,New_Tone,New_Tone_Surprise,Entropy,RT
+0,True,True,True,"(True, True)",77,9.899977321912257,77,0.001698985945561288,3.40551892997495,1.1936495680001826
