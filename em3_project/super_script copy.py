@@ -468,6 +468,24 @@ def TestTrial(seq, change, pos, col):
 
     rt = clock.getTime()
     win.color = orig_bg
+
+    def draw_feedback(correct):
+        card.draw()
+
+        if correct:
+            textstim = visual.TextStim(win, text='The answer was correct!',
+                              pos=(0, 0), color="#25fb45", height=17)
+        else:
+            textstim = visual.TextStim(win, text='The answer was false!',
+                              pos=(0, 0), color="#ff3838", height=17)
+
+        textstim.draw()
+        col_cue.draw()
+        win.flip()
+        core.wait(1)
+
+    draw_feedback((guess==change))
+
     return guess, rt
 
 
