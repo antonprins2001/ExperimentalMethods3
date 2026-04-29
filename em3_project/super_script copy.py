@@ -44,14 +44,14 @@ def checkIfEscape():
 
 def GenerateTrials(path):
     df_order = pd.read_csv(path)
-    df = df_order.sample(frac=1)
+    df = df_order.sample(frac=1).reset_index(drop=True)
 
     for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
         df[col] = df[col].apply(ast.literal_eval)
 
     trial_data = []
     for i in range(len(df.index)):
-        trial = df.loc[0].to_dict()
+        trial = df.iloc[i].to_dict()
         trial["trial"] = i
         trial_data.append(trial)
     return trial_data
@@ -73,40 +73,123 @@ def MemoryTrial(sequence):
 
     RTs = []
 
-    square = visual.Rect(win,fillColor=col,size=[200, 200])
-    square.draw()
-    win.flip()
+    C_PAGE    = [0.867, 0.851, 0.812]
+    C_CARD    = 'white';   C_BD_CARD = '#dddddd'
+    C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
+    C_BG_SUCC = '#eaf3de'; C_BD_SUCC = '#b6d48e'
+    C_BG_WARN = '#faeeda'; C_BD_WARN = '#e0a96a'
+    C_BG_S    = "#e6fbe8"; C_TX_S    = "#18a53b"; C_BD_S    = "#85eb8a"
 
-    for i in range(1, 9, 1):
+    orig_bg = list(win.color)
+    win.color = C_PAGE
 
-        for j in range(i):
-            tones[sequence[j]].play()
+    card = visual.Rect(win, width=700, height=580, pos=(0, 0),
+                       fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
+
+
+    # Option headline pill — A/B label above tiles
+    opt_pill_bg  = visual.Rect(win, width=260, height=36, pos=(0, 130),
+                               fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
+    opt_pill_lbl = visual.TextStim(win, text='', pos=(0, 130),
+                                   color=C_BG_SEC, height=15)
+
+    # 8 sequence tiles (46×46, spacing 60 px)
+    TILE_STEP = 60
+    tile_xs = [-(7 * TILE_STEP) / 2 + i * TILE_STEP for i in range(8)]
+    tiles = [visual.Rect(win, width=46, height=46, pos=(x, 70),
+                         fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
+             for x in tile_xs]
+
+    # Orange hollow border shown around whichever tile is playing
+    orange_border = visual.Rect(win, width=54, height=54, pos=(0, 70),
+                                fillColor=None, lineColor='orange', lineWidth=3)
+
+    # Choice buttons: No choice = green ("Space")
+    btn_bg  = visual.Rect(win, width=200, height=50, pos=(0, -115),
+                             fillColor=C_BG_S, lineColor=C_BD_S, lineWidth=1)
+    btn_txt = visual.TextStim(win, text='Tone A  [Z]', pos=(0, -115),
+                                color=C_TX_S, height=15)
+
+    color_cue = visual.Rect(win, fillColor=col, size=[36, 36], pos=(0, -255))
+
+    def draw_scene(n_green, active_idx, show_buttons):
+        card.draw()
+
+        for k, t in enumerate(tiles):
+            if k == active_idx and k == n_green:
+                t.fillColor = C_BG_S; t.lineColor = C_BD_S
+            elif k < n_green:
+                # Confirmed tiles: always green (orange border added below if active)
+                t.fillColor = C_BG_SUCC; t.lineColor = C_BD_SUCC
+            else:
+                t.fillColor = C_BG_SEC; t.lineColor = C_BD_SEC
+            t.draw()
+
+        # Orange hollow border around the currently playing tile
+        if active_idx >= 0:
+            orange_border.pos = (tile_xs[active_idx], 70)
+            orange_border.draw()
+
+        if show_buttons:
+            btn_bg.draw(); btn_txt.draw()
+        color_cue.draw()
+        win.flip()
+
+    def play_option(path, n_confirmed):
+        for j in range(n_confirmed):
+            draw_scene(n_green=n_confirmed, active_idx=j, show_buttons=False)
+            tones[path[j]].play()
             core.wait(duration)
+        draw_scene(n_green=n_confirmed, active_idx=n_confirmed, show_buttons=False)
+        tones[path[n_confirmed]].play()
+        core.wait(duration)
 
-        core.wait(0.5)
+    def play_root_tone(note):
+        draw_scene(n_green=1, active_idx=0, show_buttons=False)
+        tones[note].play()
+        core.wait(duration)
+        core.wait(1.0)
+        draw_scene(1, active_idx=-1, show_buttons=False)
 
-        for j in range(i):
-            tones[sequence[j]].play()
+    def play_animated(path, n_confirmed):
+        for j, note in enumerate(path):
+            draw_scene(n_green=n_confirmed, active_idx=j, show_buttons=False)
+            tones[note].play()
             core.wait(duration)
+        draw_scene(n_confirmed, active_idx=-1, show_buttons=False)
 
+    play_root_tone(sequence[0])
+    RTs.append(0.0)
+
+
+    for i in range(2, 9, 1):
+
+        n_confirmed = i
+
+        play_option(sequence[:i+1], n_confirmed)
+        core.wait(0.4)
+        play_option(sequence[:i+1], n_confirmed)
+
+        draw_scene(n_confirmed, active_idx=-1, show_buttons=True)
         clock.reset()
-        event.waitKeys() #Måske noget andet
+
+        event.clearEvents()
+        response = False
+        while not response:
+            keys = event.getKeys(keyList=['space', 'escape'])
+            if 'escape' in keys:
+                core.quit()
+            if 'space' in keys:
+                response = True
+
         RTs.append(clock.getTime())
 
-    testMessage = visual.TextStim(win, text="Playing the full melody, Press key", pos= [0, -150], color="black")
-    square.draw()
-    testMessage.draw()
-    win.flip()
-    event.waitKeys()
+    for rep in range(2):
+        play_animated(sequence, n_confirmed=8)
+        if rep == 0:
+            core.wait(0.3)
 
-    for i, tone in enumerate(sequence):
-        freq = ConvertFreq(sequence[i])
-        tone = sound.Sound(value=freq, secs=duration)
-        tone.play()
-        core.wait(duration)
-    win.flip()
-
-    return RTs, col
+    return RTs, col    
 
 def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
     path_tones = [tree[0]]
@@ -404,6 +487,7 @@ def CollectTrials(trial_seqs, subject_id):
         "Changed": [],
         "Guess": [],
         "Surprise_Cond": [],
+        "Position": [],
         "Old_Tone": [],
         "Old_Tone_Surprise": [],
         "New_Tone": [],
@@ -482,6 +566,7 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Changed"].append(False)
             test_data["Guess"].append(guess)
             test_data["Surprise_Cond"].append(seq_data["Surprisal"])
+            test_data["Position"].append(None)
             test_data["Old_Tone"].append(None)
             test_data["Old_Tone_Surprise"].append(None)
             test_data["New_Tone"].append(None)
@@ -490,8 +575,11 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["RT"].append(rt)
 
 
-        else: #Alternative sequence
-            new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
+        else:
+            if seq_data["Generated"]:
+                new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
+            else:
+                new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], [seq_data["Alternatives"]], 0)
             test = TestTrial(new_seq, True, seq_data["Position"], color)
             guess, rt = test
 
@@ -500,6 +588,7 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Changed"].append(True)
             test_data["Guess"].append(guess)
             test_data["Surprise_Cond"].append(seq_data["Surprisal"])
+            test_data["Position"].append(seq_data["Position"])
             test_data["Old_Tone"].append(seq[seq_data["Position"]-1])
             test_data["Old_Tone_Surprise"].append(probs[seq_data["Position"]-1])
             test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
