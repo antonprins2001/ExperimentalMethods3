@@ -4,6 +4,7 @@ import ast
 import numpy as np
 import os
 import serial
+from participant import Participant
 
 def getSettings():
     fullscreen = False
@@ -899,7 +900,7 @@ def CollectTrials(trial_seqs, subject_id):
     return test_data, trial_data
 
 path = "Sequence/sequences.csv"
-#practice_path = 'Sequence/practice_sequences.csv'
+practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
 practice_seqs = GeneratePracticeTrials(practice_path)
@@ -913,7 +914,7 @@ subject_id = getSubjectInfo()
 
 introMessage()
 
-#PracticeTrials(practice_seqs)
+PracticeTrials(practice_seqs)
 
 test_data, trial_data = CollectTrials(trial_seqs, subject_id)
 
