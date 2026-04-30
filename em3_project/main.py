@@ -873,10 +873,7 @@ def CollectTrials(trial_seqs, subject_id):
 
 
         else:
-            if seq_data["Generated"]:
-                new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
-            else:
-                new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], [seq_data["Alternatives"]], 0)
+            new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
             test = TestTrial(new_seq, True, seq_data["Position"], color, seq_data["Generated"], seq_data["Surprisal"])
             guess, rt = test
 
@@ -902,7 +899,7 @@ path = "Sequence/sequences.csv"
 #practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
-practice_seqs = GeneratePracticeTrials(practice_path)
+#practice_seqs = GeneratePracticeTrials(practice_path)
 
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
 win = visual.Window(size=window_size, color = bg_color, units = "pix")
