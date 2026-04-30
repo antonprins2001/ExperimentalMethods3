@@ -100,9 +100,24 @@ def GeneratePracticeTrials(path):
 import random
 
 def introMessage():
+    C_PAGE    = [0.867, 0.851, 0.812]
+    C_CARD    = 'white';   C_BD_CARD = '#dddddd'
+    C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
+    C_BG_SUCC = '#eaf3de'; C_BD_SUCC = '#b6d48e'
+    C_BG_WARN = '#faeeda'; C_BD_WARN = '#e0a96a'
+    C_BG_A    = '#e6f1fb'; C_TX_A    = '#185fa5'; C_BD_A    = '#85b7eb'
+    C_BG_B    = '#faeeda'; C_TX_B    = '#854f0b'; C_BD_B    = '#e0a96a'
+    C_TX_PRI  = '#1a1a18'
+
+    orig_bg = list(win.color)
+    win.color = C_PAGE
+
+    card = visual.Rect(win, width=700, height=580, pos=(0, 0),
+                       fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
     intro = visual.TextStim(win, text= "Welcome to the experiment! You will in the following hour be doing both memorization of a small 8-tones melodies, " \
     "aswell as producong your own melody thorugh 8 binary choices between two tones. You job is to remember the melodies, and afterwards determine whether it has been changed or not." \
     "We start off with som practice trials. Press any key to start.", pos= [0, 0], color=text_color)
+    card.draw()
     intro.draw()
     win.flip()
     event.waitKeys()
@@ -865,6 +880,9 @@ clock = core.Clock()
 #port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)  # address for serial port is COM4 in this example. Change to match your machine.
 
 subject_id = getSubjectInfo()
+
+introMessage()
+
 PracticeTrials(practice_seqs)
 
 test_data, trial_data = CollectTrials(trial_seqs, subject_id)
