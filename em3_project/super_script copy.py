@@ -26,14 +26,14 @@ def getSettings():
 
 def getSubjectInfo():
     info = {'FID': 0}
-    dlg = gui.DlgFromDict(dictionary=info, title='n-Armed Bandit Experiment')
+    dlg = gui.DlgFromDict(dictionary=info, title='Music and Memory Experiment')
     if not dlg.OK:
         core.quit()
     return info['FID']
 
 def getSubjectCharacteristics():
     info = {'Age': 0, 'Gender (F/M/Other)': ' '}
-    dlg = gui.DlgFromDict(dictionary=info, title='n-Armed Bandit Experiment')
+    dlg = gui.DlgFromDict(dictionary=info, title='Music and Memory Experiment')
     if not dlg.OK:
         core.quit()
     return info['Age'], info['Gender (F/M/Other)']
