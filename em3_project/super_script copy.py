@@ -260,7 +260,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
         prompt_txt.draw()
         win.flip()
 
-    def draw_choice(choice):
+    def draw_choice(choice, n_green, active_idx):
         card.draw()
         if choice == 'A':
             opt_pill_bg.fillColor = C_BG_A; opt_pill_bg.lineColor = C_BD_A
@@ -273,6 +273,25 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
             opt_pill_lbl.color = C_BG_SEC
         opt_pill_lbl.text = "The computer chose " + choice
         opt_pill_bg.draw(); opt_pill_lbl.draw()
+
+        for k, t in enumerate(tiles):
+            if k == active_idx and k == n_green:
+                # New tile: option color (blue for A, amber for B)
+                if choice == 'A':
+                    t.fillColor = C_BG_A; t.lineColor = C_BD_A
+                elif choice == 'B':
+                    t.fillColor = C_BG_B; t.lineColor = C_BD_B
+                else:
+                    t.fillColor = C_BG_WARN; t.lineColor = C_BD_WARN
+            elif k < n_green:
+                # Confirmed tiles: always green (orange border added below if active)
+                t.fillColor = C_BG_SUCC; t.lineColor = C_BD_SUCC
+            else:
+                t.fillColor = C_BG_SEC; t.lineColor = C_BD_SEC
+            t.draw()
+
+        space_btn_bg.draw(); space_btn_txt.draw()
+        color_cue.draw()
         win.flip()
 
     draw_intro()
@@ -292,16 +311,13 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
         play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
         core.wait(0.4)
         play_option(path_tones + [tree[child2]], n_confirmed, '▶ Option B', 'B')
-
-        draw_scene(n_confirmed, active_idx=-1, opt_header='',
-                   opt_color=None, show_buttons=True)
         
         if random.choice([True,False]):
             choice = child1; alt = child2
-            draw_choice("A")
+            draw_choice("A", n_confirmed, active_idx=-1)
         else:
             choice = child2; alt = child1
-            draw_choice("B")
+            draw_choice("B", n_confirmed, active_idx=-1)
 
         clock.reset()
 
@@ -901,6 +917,8 @@ introMessage()
 PracticeTrials(practice_seqs)
 
 test_data, trial_data = CollectTrials(trial_seqs, subject_id)
+
+#port.close()
 
 core.quit()
 
