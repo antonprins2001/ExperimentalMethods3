@@ -444,11 +444,11 @@ def TestTrial(seq, change, pos, col):
     event.waitKeys()
 
     for i, note in enumerate(seq):
+        draw_test(active_idx=i, show_buttons=False)
         if i == pos - 1 and change:
             print("Noget med en form for eeg trigger her")
         else:
             print("Noget med en anden form for eeg trigger her")
-        draw_test(active_idx=i, show_buttons=False)
         tones[note].play()
         core.wait(duration)
 
