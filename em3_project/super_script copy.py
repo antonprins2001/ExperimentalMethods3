@@ -15,7 +15,7 @@ from condition_manager import GenerateTrials
 def getSettings():
     fullscreen = False
     window_size = (1200, 800)
-    bg_color = "blue"
+    bg_color = [0.867, 0.851, 0.812]
     text_color = "white"
 
     duration = 0.4
