@@ -1,112 +1,110 @@
-def PracticeTrials(trial_seqs):
+def PracticeTrials(practice_seqs):
 
-    memory_practice = None
-    production_practice = None
+    for practice_num, seq_data in enumerate(practice_seqs):
 
-    for seq_data in trial_seqs:
-        if seq_data["Generated"] == False and memory_practice is None:
-            memory_practice = seq_data
+        if seq_data["Generated"]:
+            intro_text = "Practice trial\n\nThis is a production trial.\n\nPress any key to start."
 
-        if seq_data["Generated"] == True and production_practice is None:
-            production_practice = seq_data
+            intro = visual.TextStim(
+                win,
+                text=intro_text,
+                color=text_color,
+                height=28
+            )
+            intro.draw()
+            win.flip()
+            event.waitKeys()
 
-        if memory_practice is not None and production_practice is not None:
-            break
+            trial = ProductionTrial(
+                tree=seq_data["Sequence"],
+                prob_tree=seq_data["Probabilites"],
+                entropy_tree=seq_data["Entropy"],
+                altposition=seq_data["Position"]
+            )
 
-    # memory practice
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
 
-    intro = visual.TextStim(
-        win,
-        text="Practice trial 1\n\nThis is a memory trial.\n\nPress any key to start.",
-        color=text_color,
-        height=28
-    )
-    intro.draw()
-    win.flip()
-    event.waitKeys()
+            seq = path_tones
+            probs = path_probs
+            ents = path_entropy
 
-    RTs, color = MemoryTrial(memory_practice["Sequence"])
+        else:
+            intro_text = "Practice trial\n\nThis is a memory trial.\n\nPress any key to start."
 
-    seq = memory_practice["Sequence"].copy()
+            intro = visual.TextStim(
+                win,
+                text=intro_text,
+                color=text_color,
+                height=28
+            )
+            intro.draw()
+            win.flip()
+            event.waitKeys()
 
-    if not memory_practice["Change"]:
-        guess, rt = TestTrial(seq, False, -1, color)
+            trial = MemoryTrial(
+                tree=seq_data["Sequence"],
+                prob_tree=seq_data["Probabilites"],
+                entropy_tree=seq_data["Entropy"],
+                altposition=seq_data["Position"]
+            )
 
-    else:
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
 
-        new_seq, alt_prob = GenerateNewSeq(
-            seq.copy(),
-            memory_practice["Position"],
-            [memory_practice["Alternatives"]],
-            0
+            seq = path_tones
+            probs = path_probs
+            ents = path_entropy
+
+        if not seq_data["Change"]:
+            guess, rt = TestTrial(
+                seq,
+                False,
+                -1,
+                color,
+                seq_data["Generated"],
+                seq_data["Surprisal"]
+            )
+
+        else:
+            if seq_data["Generated"]:
+                new_seq, alt_prob = GenerateNewSeq(
+                    seq.copy(),
+                    seq_data["Position"],
+                    seq_data["Alternatives"],
+                    altpos
+                )
+            else:
+                new_seq, alt_prob = GenerateNewSeq(
+                    seq.copy(),
+                    seq_data["Position"],
+                    [seq_data["Alternatives"]],
+                    0
+                )
+
+            guess, rt = TestTrial(
+                new_seq,
+                True,
+                seq_data["Position"],
+                color,
+                seq_data["Generated"],
+                seq_data["Surprisal"]
+            )
+
+        outro = visual.TextStim(
+            win,
+            text="Practice trial finished.\n\nPress any key to continue.",
+            color=text_color,
+            height=28
         )
+        outro.draw()
+        win.flip()
+        event.waitKeys()
 
-        guess, rt = TestTrial(
-            new_seq,
-            True,
-            memory_practice["Position"],
-            color
-        )
-
-    outro = visual.TextStim(
-        win,
-        text="Memory practice is finished.\n\nPress any key to continue.",
-        color=text_color,
-        height=28
-    )
-    outro.draw()
-    win.flip()
-    event.waitKeys()
-
-    # Production practice
-
-    intro = visual.TextStim(
-        win,
-        text="Practice trial 2\n\nThis is a production trial.\n\nPress any key to start.",
-        color=text_color,
-        height=28
-    )
-    intro.draw()
-    win.flip()
-    event.waitKeys()
-
-    trial = ProductionTrial(
-        tree=production_practice["Sequence"],
-        prob_tree=production_practice["Probabilites"],
-        entropy_tree=production_practice["Entropy"],
-        altposition=production_practice["Position"]
-    )
-
-    path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
-
-    seq = path_tones.copy()
-
-    if not production_practice["Change"]:
-        guess, rt = TestTrial(seq, False, -1, color)
-
-    else:
-        new_seq, alt_prob = GenerateNewSeq(
-            seq.copy(),
-            production_practice["Position"],
-            production_practice["Alternatives"],
-            altpos
-        )
-
-        guess, rt = TestTrial(
-            new_seq,
-            True,
-            production_practice["Position"],
-            color
-        )
-
-    outro = visual.TextStim(
+    end_text = visual.TextStim(
         win,
         text="Practice is finished.\n\nPress any key to begin the real experiment.",
         color=text_color,
         height=28
     )
-    outro.draw()
+    end_text.draw()
     win.flip()
     event.waitKeys()
-
-def CollectTrials(trial_seqs, subject_id):

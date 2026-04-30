@@ -16,7 +16,7 @@ def getSettings():
     fullscreen = False
     window_size = (1200, 800)
     bg_color = [0.867, 0.851, 0.812]
-    text_color = "white"
+    text_color = "black"
 
     duration = 0.4
 
@@ -74,7 +74,7 @@ def GenerateTrials(path):
     
 
     for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
-        df[col] = df[col].apply(ast.literal_eval)
+        df[col] = df[col].apply(safe_literal_eval)
 
     trial_data = []
     for i in range(len(df.index)):
@@ -87,9 +87,8 @@ def GeneratePracticeTrials(path):
     df_order = pd.read_csv(path)
     df = df_order.sample(frac=1).reset_index(drop=True)
     
-
     for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
-        df[col] = df[col].apply(ast.literal_eval)
+        df[col] = df[col].apply(safe_literal_eval)
 
     trial_data = []
     for i in range(len(df.index)):
@@ -100,8 +99,22 @@ def GeneratePracticeTrials(path):
 
 import random
 
+def introMessage():
+    intro = visual.TextStim(win, text= "Welcome to the experiment! You will in the following hour be doing both memorization of a small 8-tones melodies, " \
+    "aswell as producong your own melody thorugh 8 binary choices between two tones. You job is to remember the melodies, and afterwards determine whether it has been changed or not." \
+    "We start off with som practice trials. Press any key to start.", pos= [0, 0], color=text_color)
+    intro.draw()
+    win.flip()
+    event.waitKeys()
+
 def ConvertFreq(tone):
     return round(440 * (2**((int(tone) - 69)/12)), 3)
+
+def safe_literal_eval(x):
+    if isinstance(x, str):
+        return ast.literal_eval(x)
+    else:
+        return x
 
 def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
     path_tones = [tree[0]]
@@ -598,6 +611,117 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
 
     return guess, rt
 
+def PracticeTrials(practice_seqs):
+
+    for practice_num, seq_data in enumerate(practice_seqs):
+
+        if seq_data["Generated"]:
+            intro_text = "Practice trial\n\nThis is a production trial.\n\nPress any key to start."
+
+            intro = visual.TextStim(
+                win,
+                text=intro_text,
+                color=text_color,
+                height=28
+            )
+            intro.draw()
+            win.flip()
+            event.waitKeys()
+
+            trial = ProductionTrial(
+                tree=seq_data["Sequence"],
+                prob_tree=seq_data["Probabilites"],
+                entropy_tree=seq_data["Entropy"],
+                altposition=seq_data["Position"]
+            )
+
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+
+            seq = path_tones
+            probs = path_probs
+            ents = path_entropy
+
+        else:
+            intro_text = "Practice trial\n\nThis is a memory trial.\n\nPress any key to start."
+
+            intro = visual.TextStim(
+                win,
+                text=intro_text,
+                color=text_color,
+                height=28
+            )
+            intro.draw()
+            win.flip()
+            event.waitKeys()
+
+            trial = MemoryTrial(
+                tree=seq_data["Sequence"],
+                prob_tree=seq_data["Probabilites"],
+                entropy_tree=seq_data["Entropy"],
+                altposition=seq_data["Position"]
+            )
+
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+
+            seq = path_tones
+            probs = path_probs
+            ents = path_entropy
+
+        if not seq_data["Change"]:
+            guess, rt = TestTrial(
+                seq,
+                False,
+                -1,
+                color,
+                seq_data["Generated"],
+                seq_data["Surprisal"]
+            )
+
+        else:
+            if seq_data["Generated"]:
+                new_seq, alt_prob = GenerateNewSeq(
+                    seq.copy(),
+                    seq_data["Position"],
+                    seq_data["Alternatives"],
+                    altpos
+                )
+            else:
+                new_seq, alt_prob = GenerateNewSeq(
+                    seq.copy(),
+                    seq_data["Position"],
+                    [seq_data["Alternatives"]],
+                    0
+                )
+
+            guess, rt = TestTrial(
+                new_seq,
+                True,
+                seq_data["Position"],
+                color,
+                seq_data["Generated"],
+                seq_data["Surprisal"]
+            )
+
+        outro = visual.TextStim(
+            win,
+            text="Practice trial finished.\n\nPress any key to continue.",
+            color=text_color,
+            height=28
+        )
+        outro.draw()
+        win.flip()
+        event.waitKeys()
+
+    end_text = visual.TextStim(
+        win,
+        text="Practice is finished.\n\nPress any key to begin the real experiment.",
+        color=text_color,
+        height=28
+    )
+    end_text.draw()
+    win.flip()
+    event.waitKeys()
+
 
 def GenerateNewSeq(seq, pos, alts, altpos):
     
@@ -730,7 +854,10 @@ def CollectTrials(trial_seqs, subject_id):
     return test_data, trial_data
 
 path = "Sequence/sequences.csv"
+practice_path = 'Sequence/practice_sequences.csv'
+
 trial_seqs = GenerateTrials(path)
+practice_seqs = GeneratePracticeTrials(practice_path)
 
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
 win = visual.Window(size=window_size, color = bg_color, units = "pix")
@@ -738,6 +865,8 @@ clock = core.Clock()
 #port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)  # address for serial port is COM4 in this example. Change to match your machine.
 
 subject_id = getSubjectInfo()
+PracticeTrials(practice_seqs)
+
 test_data, trial_data = CollectTrials(trial_seqs, subject_id)
 
 core.quit()
