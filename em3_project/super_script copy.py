@@ -4,13 +4,7 @@ import ast
 import numpy as np
 import os
 import serial
-
-from settings import getSettings
 from participant import Participant
-from trial import ConvertFreq, MemoryTrial, ProductionTrial, TestTrial
-from data_collecter import CollectTrials
-from condition_manager import GenerateTrials
-
 
 def getSettings():
     fullscreen = False
@@ -84,8 +78,7 @@ def GenerateTrials(path):
     return trial_data
 
 def GeneratePracticeTrials(path):
-    df_order = pd.read_csv(path)
-    df = df_order.sample(frac=1).reset_index(drop=True)
+    df = pd.read_csv(path)
     
     for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
         df[col] = df[col].apply(safe_literal_eval)
@@ -280,6 +273,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
             opt_pill_lbl.color = C_BG_SEC
         opt_pill_lbl.text = "The computer chose " + choice
         opt_pill_bg.draw(); opt_pill_lbl.draw()
+        win.flip()
 
     draw_intro()
     core.wait(2)
@@ -301,6 +295,14 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
 
         draw_scene(n_confirmed, active_idx=-1, opt_header='',
                    opt_color=None, show_buttons=True)
+        
+        if random.choice([True,False]):
+            choice = child1; alt = child2
+            draw_choice("A")
+        else:
+            choice = child2; alt = child1
+            draw_choice("B")
+
         clock.reset()
 
         event.clearEvents()
@@ -310,12 +312,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
             if 'escape' in keys:
                 core.quit()
             if 'space' in keys:
-                if random.choice([True,False]):
-                    choice = child1; alt = child2; response = True
-                    draw_choice("A")
-                else:
-                    choice = child2; alt = child1; response = True
-                    draw_choice("B")
+                response = True
 
         RTs.append(clock.getTime())
 
