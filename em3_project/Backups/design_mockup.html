@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musikhukommelse — Eksperiment Mockup</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-tertiary: #eeece7;
+    --bg-info: #e6f1fb;
+    --bg-success: #eaf3de;
+    --bg-warning: #faeeda;
+    --bg-danger: #fcebeb;
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-info: #185fa5;
+    --text-success: #3b6d11;
+    --text-warning: #854f0b;
+    --text-danger: #a32d2d;
+    --border-tertiary: rgba(0,0,0,0.12);
+    --border-secondary: rgba(0,0,0,0.22);
+    --border-info: rgba(24,95,165,0.35);
+    --border-success: rgba(59,109,17,0.35);
+    --border-warning: rgba(133,79,11,0.35);
+    --border-danger: rgba(163,45,45,0.35);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2c2c29;
+      --bg-info: #0c2a47;
+      --bg-success: #172e08;
+      --bg-warning: #2e1e06;
+      --bg-danger: #2e1010;
+      --text-primary: #e8e6de;
+      --text-secondary: #9c9a92;
+      --text-info: #85b7eb;
+      --text-success: #97c459;
+      --text-warning: #ef9f27;
+      --text-danger: #f09595;
+      --border-tertiary: rgba(255,255,255,0.1);
+      --border-secondary: rgba(255,255,255,0.18);
+      --border-info: rgba(133,183,235,0.3);
+      --border-success: rgba(151,196,89,0.3);
+      --border-warning: rgba(239,159,39,0.3);
+      --border-danger: rgba(240,149,149,0.3);
+    }
+  }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .wrapper { width: 100%; max-width: 560px; }
+  button {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s, opacity .15s;
+  }
+  button:hover { background: var(--bg-secondary); }
+  button:active { opacity: .8; }
+  button:disabled { opacity: .35; cursor: default; }
+  select {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    padding: 3px 7px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<div style="padding:1rem 0">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+    <span id="phase-label" style="font-size:12px;color:var(--text-secondary)"></span>
+    <div id="dots" style="display:flex;gap:4px;align-items:center"></div>
+    <span id="phase-count" style="font-size:12px;color:var(--text-secondary)"></span>
+  </div>
+  <div style="background:var(--bg-secondary);padding:5px;border-radius:var(--radius-lg)">
+    <div id="scr" style="background:var(--bg-primary);border:0.5px solid var(--border-tertiary);border-radius:var(--radius-md);min-height:400px;padding:2rem 1.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem">
+    <button id="bprev" onclick="nav(-1)">← Tilbage</button>
+    <button id="bnext" onclick="nav(1)" style="font-weight:500">Næste fase →</button>
+  </div>
+</div>
+
+</div>
+<script>
+var idx=0;
+var memoStep=1,memoRound=1;
+var genStep=0,genTones=new Array(8).fill(null);
+var listenRep1=0,listenRep2=0,listenTotal=5;
+var listenPlaying=false,listenTimer=null;
+var answered1=false,answered2=false;
+var icIdx1=0,icIdx2=0,probeType1='changed',probeType2='same';
+var IC=[{l:'ns → s'},{l:'s → s'},{l:'s → ns'},{l:'ns → ns'}];
+var NOTES=['C','D','E','F','G','A','B','C5'];
+var PHASES=[
+  {n:'Intro',grp:null},
+  {n:'Memoriseret',grp:'memo'},
+  {n:'Lytning ×5',grp:'listen1'},
+  {n:'Test',grp:'test1'},
+  {n:'Genereret',grp:'gen'},
+  {n:'Lytning ×5',grp:'listen2'},
+  {n:'Test',grp:'test2'},
+  {n:'Slut',grp:null}
+];
+
+function badge(txt,col){
+  col=col||'info';
+  return '<span style="display:inline-block;padding:2px 10px;border-radius:var(--radius-md);background:var(--bg-'+col+');color:var(--text-'+col+');font-size:11px">'+txt+'</span>';
+}
+
+function tiles(n,lit,gm){
+  var h='';
+  for(var i=0;i<n;i++){
+    var bg,bd,fc;
+    if(gm){
+      var d=genTones[i]!==null,c=i===genStep&&genStep<8;
+      bg=d?'var(--bg-success)':c?'var(--bg-warning)':'var(--bg-secondary)';
+      bd=d?'var(--border-success)':c?'var(--border-warning)':'var(--border-tertiary)';
+      fc=d?'var(--text-success)':c?'var(--text-warning)':'var(--text-secondary)';
+      h+='<div style="width:32px;height:32px;border-radius:6px;background:'+bg+';border:0.5px solid '+bd+';display:flex;align-items:center;justify-content:center;font-size:10px;color:'+fc+';font-weight:500">'+(genTones[i]!==null?NOTES[genTones[i]]:'')+'</div>';
+    } else {
+      var a=i<lit,cu=i===lit-1;
+      bg=cu?'var(--bg-info)':'var(--bg-secondary)';
+      bd=cu?'var(--border-info)':'var(--border-tertiary)';
+      fc=cu?'var(--text-info)':'var(--text-secondary)';
+      h+='<div style="width:32px;height:32px;border-radius:6px;background:'+bg+';border:0.5px solid '+bd+';display:flex;align-items:center;justify-content:center;font-size:10px;color:'+fc+';font-weight:500">'+(i<lit?String(i+1):'')+'</div>';
+    }
+  }
+  return h;
+}
+
+function rings(total,done,playing){
+  return Array.from({length:total},function(_,i){
+    var isD=i<done,isA=i===done&&playing;
+    var bg=isD?'var(--bg-success)':isA?'var(--bg-warning)':'var(--bg-secondary)';
+    var bd=isD?'var(--border-success)':isA?'var(--border-warning)':'var(--border-tertiary)';
+    var fc=isD?'var(--text-success)':isA?'var(--text-warning)':'var(--text-secondary)';
+    return '<div style="width:30px;height:30px;border-radius:50%;background:'+bg+';border:0.5px solid '+bd+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+fc+';font-weight:500">'+(isD?'✓':String(i+1))+'</div>';
+  }).join('');
+}
+
+function testScreen(answeredVar,icIdxVar,probeTypeVar,setAnswered){
+  var ic=IC[window[icIdxVar]];
+  var pt=window[probeTypeVar];
+  var probe=Array.from({length:8},function(_,i){
+    var ch=pt==='changed'&&i===4;
+    return '<div style="width:32px;height:32px;border-radius:6px;background:'+(ch?'var(--bg-warning)':'var(--bg-secondary)')+';border:0.5px solid '+(ch?'var(--border-warning)':'var(--border-tertiary)')+';display:flex;align-items:center;justify-content:center;font-size:10px;color:'+(ch?'var(--text-warning)':'var(--text-secondary)')+'">'+String(i+1)+'</div>';
+  }).join('');
+  var ans=window[answeredVar];
+  return [
+    '<div style="max-width:440px;width:100%">',
+    '<div style="margin-bottom:1rem">'+badge('Test','danger')+'</div>',
+    '<p style="font-size:15px;font-weight:500;margin:0 0 0.25rem">Er dette den samme melodi som du lige hørte?</p>',
+    '<p style="font-size:12px;color:var(--text-secondary);margin:0 0 1.5rem">Lyt til probe-melodien og giv dit svar</p>',
+    '<div style="display:flex;gap:5px;justify-content:center;margin-bottom:0.5rem">'+probe+'</div>',
+    '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:1.5rem">▶ Probe afspilles…'+(pt==='changed'?' (tone 5 ændret — kun synlig her)':'')+'</div>',
+    '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:0.375rem">',
+    '<button onclick="'+setAnswered+'" style="padding:9px 20px;font-size:13px">Ja, den samme</button>',
+    '<button onclick="'+setAnswered+'" style="padding:9px 20px;font-size:13px">Nej, forskellig</button>',
+    '</div>',
+    ans?'<div style="font-size:11px;color:var(--text-success);margin-top:0.5rem">Svar registreret</div>':'',
+    '<div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:0.75rem 1rem;font-size:11px;text-align:left;margin-top:1.25rem">',
+    '<div style="font-weight:500;color:var(--text-secondary);margin-bottom:8px">Forsøgsdesign — ikke synlig for deltager</div>',
+    '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">',
+    '<select onchange="window.'+probeTypeVar+'=this.value;window.'+answeredVar+'=false;R()" style="font-size:11px;padding:2px 5px">',
+    '<option value="changed"'+(pt==='changed'?' selected':'')+'>Ændret probe</option>',
+    '<option value="same"'+(pt==='same'?' selected':'')+'>Uændret probe</option>',
+    '</select>',
+    '<select onchange="window.'+icIdxVar+'=parseInt(this.value);R()" style="font-size:11px;padding:2px 5px">',
+    IC.map(function(c,i){return '<option value="'+i+'"'+(i===window[icIdxVar]?' selected':'')+'>IC: '+c.l+'</option>';}).join(''),
+    '</select>',
+    '</div>',
+    '<div style="color:var(--text-secondary)">Probe: <strong>'+(pt==='same'?'Uændret':'Ændret')+'</strong> · IC: <strong>'+ic.l+'</strong></div>',
+    '</div>',
+    '</div>'
+  ].join('');
+}
+
+function listenScreen(repVar,total){
+  var rep=window[repVar];
+  var allDone=rep>=total;
+  var isP=listenPlaying&&!allDone;
+  return [
+    '<div style="max-width:360px;width:100%">',
+    '<div style="margin-bottom:1rem">'+badge('Lytning — fuld melodi','warning')+'</div>',
+    '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 1.5rem;line-height:1.6">Den komplette 8-tone melodi afspilles <strong>'+total+' gange</strong> i træk.</p>',
+    '<div style="display:flex;gap:7px;justify-content:center;margin-bottom:1rem">'+rings(total,allDone?total:rep,isP)+'</div>',
+    '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:1.5rem">',
+    allDone?'Afspilning afsluttet — brug Næste fase →':isP?'Afspiller…':'Klar til afspilning',
+    '</div>',
+    allDone?'':('<button onclick="W.startListen(\''+repVar+'\','+total+')" style="font-size:13px;padding:8px 22px;'+(isP?'opacity:.5;pointer-events:none':'')+'">'+(isP?'Afspiller…':'▶ Afspil melodi')+'</button>'),
+    '</div>'
+  ].join('');
+}
+
+function getHTML(){
+  var g=PHASES[idx].grp;
+
+  if(idx===0) return [
+    '<div style="max-width:300px">',
+    '<div style="width:48px;height:48px;margin:0 auto 1.5rem;border-radius:50%;background:var(--bg-secondary);border:0.5px solid var(--border-tertiary);display:flex;align-items:center;justify-content:center">',
+    '<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8.5" stroke="var(--text-secondary)" stroke-width="1"/><path d="M8.5 7.5l6 3.5-6 3.5V7.5z" fill="var(--text-secondary)"/></svg>',
+    '</div>',
+    '<p style="font-size:18px;font-weight:500;margin:0 0 0.5rem">Musikhukommelse</p>',
+    '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 1.5rem;line-height:1.65">Du vil først lytte til en melodi, derefter skabe din egen. Begge gange testes din hukommelse.</p>',
+    '<div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem 1.125rem;font-size:12px;color:var(--text-secondary);margin-bottom:1.75rem;text-align:left;line-height:2.2">',
+    '① Lyt til en 8-tone melodi (tone for tone)<br>② Hør melodien 5 gange i træk<br>③ Svar: samme melodi?<br>④ Skab din egen 8-tone melodi<br>⑤ Hør din melodi 5 gange i træk<br>⑥ Svar: samme melodi?',
+    '</div>',
+    '<button onclick="nav(1)" style="font-size:13px;padding:8px 22px">Start forsøget</button>',
+    '</div>'
+  ].join('');
+
+  if(g==='memo'){
+    var done=memoStep>8,step=Math.min(memoStep,8);
+    var msg=done?(memoRound<2?'Runde 1 færdig':'Opbygning afsluttet'):'Tone '+step+' af 8 tilføjes';
+    var ctrl=done&&memoRound<2?
+      '<button onclick="memoStep=1;memoRound=2;R()" style="font-size:12px">Start runde 2 →</button>':
+      done?'<button onclick="nav(1)" style="font-size:12px">Gå til lytning →</button>':
+      '<button onclick="memoStep++;R()" style="font-size:12px">Tilføj tone →</button>';
+    var back=memoStep>1?'<button onclick="memoStep=Math.max(1,memoStep-1);R()" style="font-size:12px;margin-right:8px">←</button>':'';
+    return [
+      '<div style="max-width:420px;width:100%">',
+      '<div style="margin-bottom:1rem">'+badge('Encoding — memoriseret')+'</div>',
+      '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 0.375rem">Lyt opmærksomt. Én ny tone tilføjes ved hvert trin.</p>',
+      '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:1.25rem">Runde '+memoRound+' af 2</div>',
+      '<div style="display:flex;gap:5px;justify-content:center;margin-bottom:0.75rem">'+tiles(8,step,false)+'</div>',
+      '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:1.25rem">'+msg+'</div>',
+      '<div style="display:flex;justify-content:center;align-items:center">'+back+ctrl+'</div>',
+      '</div>'
+    ].join('');
+  }
+
+  if(g==='listen1') return listenScreen('listenRep1',listenTotal);
+  if(g==='listen2') return listenScreen('listenRep2',listenTotal);
+  if(g==='test1') return testScreen('answered1','icIdx1','probeType1','answered1=true;R()');
+  if(g==='test2') return testScreen('answered2','icIdx2','probeType2','answered2=true;R()');
+
+  if(g==='gen'){
+    var done2=genStep>=8;
+    var piano=NOTES.map(function(n,i){
+      return '<button onclick="W.pick('+i+')" style="width:32px;height:46px;font-size:10px;border-radius:4px;background:var(--bg-primary);border:0.5px solid var(--border-tertiary);color:var(--text-secondary)">'+n+'</button>';
+    }).join('');
+    return [
+      '<div style="max-width:420px;width:100%">',
+      '<div style="margin-bottom:1rem">'+badge('Encoding — genereret','success')+'</div>',
+      '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 0.375rem">Vælg tonerne én ad gangen. Melodien opbygges og afspilles løbende.</p>',
+      '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:1.125rem">'+(done2?'Alle 8 toner valgt':'Vælg tone '+(genStep+1)+' af 8')+'</div>',
+      '<div style="display:flex;gap:5px;justify-content:center;margin-bottom:1.25rem">'+tiles(8,genStep,true)+'</div>',
+      done2?'':('<div style="display:flex;gap:4px;justify-content:center;margin-bottom:0.75rem">'+piano+'</div>'),
+      done2?'<button onclick="nav(1)" style="font-size:12px">Gå til lytning →</button>':'<div style="font-size:11px;color:var(--text-secondary)">Melodien opbygges og gentages 2× i alt</div>',
+      '</div>'
+    ].join('');
+  }
+
+  if(idx===7) return [
+    '<div style="max-width:300px">',
+    '<div style="width:48px;height:48px;margin:0 auto 1.5rem;border-radius:50%;background:var(--bg-success);border:0.5px solid var(--border-success);display:flex;align-items:center;justify-content:center;color:var(--text-success)">',
+    '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10l5 5 7-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    '</div>',
+    '<p style="font-size:18px;font-weight:500;margin:0 0 0.5rem">Tak for din deltagelse</p>',
+    '<p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.65">Dine svar er registreret. Forsøget er nu afsluttet.</p>',
+    '</div>'
+  ].join('');
+  return '';
+}
+
+function R(){
+  document.getElementById('scr').innerHTML=getHTML();
+  var dots=document.getElementById('dots');
+  dots.innerHTML=PHASES.map(function(p,i){
+    var isT=p.grp&&(p.grp==='test1'||p.grp==='test2');
+    var isL=p.grp&&(p.grp==='listen1'||p.grp==='listen2');
+    var col=i===idx?'var(--text-primary)':isT?'var(--bg-danger)':isL?'var(--bg-warning)':'var(--border-secondary)';
+    return '<div title="'+p.n+'" style="height:6px;width:'+(i===idx?'18':'6')+'px;border-radius:3px;background:'+col+';transition:width .2s"></div>';
+  }).join('');
+  document.getElementById('phase-label').textContent=PHASES[idx].n;
+  document.getElementById('phase-count').textContent=(idx+1)+' / '+PHASES.length;
+  document.getElementById('bprev').disabled=idx===0;
+  document.getElementById('bnext').disabled=idx===7;
+}
+window.R=R;
+
+function nav(d){
+  if(listenTimer){clearInterval(listenTimer);listenTimer=null;}
+  listenPlaying=false;
+  idx=Math.max(0,Math.min(7,idx+d));
+  if(idx===1){memoStep=1;memoRound=1;}
+  if(idx===4){genStep=0;genTones=new Array(8).fill(null);}
+  if(idx===2){listenRep1=0;}
+  if(idx===5){listenRep2=0;}
+  if(idx===3){answered1=false;}
+  if(idx===6){answered2=false;}
+  R();
+}
+
+var W=window;
+W.pick=function(t){if(genStep<8){genTones[genStep]=t;genStep++;R();}};
+W.startListen=function(repVar,total){
+  if(listenPlaying||window[repVar]>=total)return;
+  listenPlaying=true;R();
+  var start=Date.now(),dur=2000;
+  listenTimer=setInterval(function(){
+    if(Date.now()-start>=dur){
+      clearInterval(listenTimer);listenTimer=null;
+      listenPlaying=false;
+      window[repVar]++;
+      R();
+      if(window[repVar]<total){
+        setTimeout(function(){W.startListen(repVar,total);},500);
+      }
+    } else {R();}
+  },250);
+};
+R();
+</script>
+</body>
+</html>

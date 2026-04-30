@@ -4,9 +4,9 @@ import ast
 import numpy as np
 import os
 
-from settings import getSettings
-from participant import Participant
-from trial import ConvertFreq, MemoryTrial, ProductionTrial, TestTrial
+from git.em3_project.Backups.settings import getSettings
+from git.em3_project.Backups.participant import Participant
+from git.em3_project.Backups.trial import ConvertFreq, MemoryTrial, ProductionTrial, TestTrial
 from data_collecter import CollectTrials
 from condition_manager import GenerateTrials
 
