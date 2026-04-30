@@ -115,8 +115,8 @@ def introMessage():
     card = visual.Rect(win, width=700, height=580, pos=(0, 0),
                        fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
     intro = visual.TextStim(win, text= "Welcome to the experiment! You will in the following hour be doing both memorization of a small 8-tones melodies, " \
-    "aswell as producong your own melody thorugh 8 binary choices between two tones. You job is to remember the melodies, and afterwards determine whether it has been changed or not." \
-    "We start off with som practice trials. Press any key to start.", pos= [0, 0], color=text_color)
+    "aswell as producing your own melody through 8 binary choices between two tones. You job is to remember the melodies, and afterwards determine whether it has been changed or not." \
+    " We start off with som practice trials. Press any key to start.", pos= [0, 0], color=text_color)
     card.draw()
     intro.draw()
     win.flip()
