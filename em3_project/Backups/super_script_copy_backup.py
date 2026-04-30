@@ -466,11 +466,11 @@ def TestTrial(seq, change, pos, col):
     event.waitKeys()
 
     for i, note in enumerate(seq):
-        draw_test(active_idx=i, show_buttons=False)
         if i == pos - 1 and change:
             print("Noget med en form for eeg trigger her")
         else:
             print("Noget med en anden form for eeg trigger her")
+        draw_test(active_idx=i, show_buttons=False)
         tones[note].play()
         core.wait(duration)
 
@@ -484,30 +484,12 @@ def TestTrial(seq, change, pos, col):
         if 'escape' in keys:
             core.quit()
         if 'z' in keys:
-            guess = True; response = True   # z = left = Ja, samme
+            guess = True; response = True   # z = left = Yes it's the same
         if 'm' in keys:
-            guess = False; response = True  # m = right = Nej, forskellig
+            guess = False; response = True  # m = right = No it's different
 
     rt = clock.getTime()
     win.color = orig_bg
-
-    def draw_feedback(correct):
-        card.draw()
-
-        if correct:
-            textstim = visual.TextStim(win, text='The answer was correct!',
-                              pos=(0, 0), color="#25fb45", height=17)
-        else:
-            textstim = visual.TextStim(win, text='The answer was false!',
-                              pos=(0, 0), color="#ff3838", height=17)
-
-        textstim.draw()
-        col_cue.draw()
-        win.flip()
-        core.wait(1)
-
-    draw_feedback((guess==change))
-
     return guess, rt
 
 
