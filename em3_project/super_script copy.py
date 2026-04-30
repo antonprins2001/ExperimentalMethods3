@@ -267,6 +267,20 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
         prompt_txt.draw()
         win.flip()
 
+    def draw_choice(choice):
+        card.draw()
+        if choice == 'A':
+            opt_pill_bg.fillColor = C_BG_A; opt_pill_bg.lineColor = C_BD_A
+            opt_pill_lbl.color = C_TX_A
+        elif choice == 'B':
+            opt_pill_bg.fillColor = C_BG_B; opt_pill_bg.lineColor = C_BD_B
+            opt_pill_lbl.color = C_TX_B
+        else:
+            opt_pill_bg.fillColor = C_BG_SEC; opt_pill_bg.lineColor = C_BD_SEC
+            opt_pill_lbl.color = C_BG_SEC
+        opt_pill_lbl.text = "The computer chose " + choice
+        opt_pill_bg.draw(); opt_pill_lbl.draw()
+
     draw_intro()
     core.wait(2)
 
@@ -298,8 +312,10 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
             if 'space' in keys:
                 if random.choice([True,False]):
                     choice = child1; alt = child2; response = True
+                    draw_choice("A")
                 else:
                     choice = child2; alt = child1; response = True
+                    draw_choice("B")
 
         RTs.append(clock.getTime())
 
@@ -312,6 +328,8 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
         path_entropy.append(entropy_tree[choice])
         alt_tones.append(tree[alt])
         alt_probs.append(prob_tree[alt])
+
+        core.wait(0.5)
 
     play_animated(path_tones, n_confirmed=8)
 
@@ -456,7 +474,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
 
     def draw_intro():
         card.draw()
-        prompt_txt = visual.TextStim(win, text='Remember the melody being composed by the computer',
+        prompt_txt = visual.TextStim(win, text='Remember the melody being composed by your own choices',
                                  pos=(0, 0), color=C_TX_PRI, height=27)
         prompt_txt.draw()
         win.flip()
