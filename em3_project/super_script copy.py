@@ -232,6 +232,16 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
                    show_buttons=False)
 
+    def draw_intro():
+        card.draw()
+        prompt_txt = visual.TextStim(win, text='Remember the melody being composed by the computer',
+                                 pos=(0, 0), color=C_TX_PRI, height=27)
+        prompt_txt.draw()
+        win.flip()
+
+    draw_intro()
+    core.wait(2)
+
     play_root_tone(path_tones[0])
     RTs.append(0.0)
 
@@ -281,154 +291,6 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
     win.color = orig_bg
     return path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, col, altpos
 
-def MemoryTrialFake(tree):
-    colors = ["red", "blue", "cyan", "yellow", "pink", "green", "purple"]
-    col = random.choice(colors)
-
-    tones = {}
-    for note in tree:
-        if note not in tones:
-            tones[note] = sound.Sound(value=ConvertFreq(note), secs=duration, stereo=True, hamming=True)
-
-    C_PAGE    = [0.867, 0.851, 0.812]
-    C_CARD    = 'white';   C_BD_CARD = '#dddddd'
-    C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
-    C_BG_SUCC = '#eaf3de'; C_BD_SUCC = '#b6d48e'
-    C_BG_A    = '#e6f1fb'; C_TX_A    = '#185fa5'; C_BD_A    = '#85b7eb'
-    C_BG_B    = '#faeeda'; C_TX_B    = '#854f0b'; C_BD_B    = '#e0a96a'
-    C_TX_PRI  = '#1a1a18'
-
-    orig_bg = list(win.color)
-    win.color = C_PAGE
-
-    card = visual.Rect(win, width=700, height=580, pos=(0, 0),
-                       fillColor=C_CARD, lineColor=C_BD_CARD, lineWidth=1)
-    opt_pill_bg  = visual.Rect(win, width=260, height=36, pos=(0, 130),
-                               fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
-    opt_pill_lbl = visual.TextStim(win, text='', pos=(0, 130),
-                                   color=C_BG_SEC, height=15)
-
-    TILE_STEP = 60
-    tile_xs = [-(7 * TILE_STEP) / 2 + i * TILE_STEP for i in range(8)]
-    tiles = [visual.Rect(win, width=46, height=46, pos=(x, 70),
-                         fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
-             for x in tile_xs]
-    orange_border = visual.Rect(win, width=54, height=54, pos=(0, 70),
-                                fillColor=None, lineColor='orange', lineWidth=3)
-
-    color_cue  = visual.Rect(win, fillColor=col, size=[36, 36], pos=(0, -255))
-    prompt_txt = visual.TextStim(win, text='Press any key to watch the computer compose',
-                                 pos=(0, 155), color=C_TX_PRI, height=13)
-    space_btn_bg  = visual.Rect(win, width=200, height=50, pos=(0, -115),
-                                fillColor=C_BG_SEC, lineColor=C_BD_SEC, lineWidth=1)
-    space_btn_txt = visual.TextStim(win, text='Press space to continue', pos=(0, -115),
-                                    color=C_TX_PRI, height=15)
-
-    def draw_scene(n_green, active_idx, opt_header, opt_color, show_prompt=False, show_space=False):
-        card.draw()
-        if show_prompt:
-            prompt_txt.draw()
-        if show_space:
-            space_btn_bg.draw(); space_btn_txt.draw()
-        if opt_header:
-            if opt_color == 'A':
-                opt_pill_bg.fillColor = C_BG_A; opt_pill_bg.lineColor = C_BD_A
-                opt_pill_lbl.color = C_TX_A
-            elif opt_color == 'B':
-                opt_pill_bg.fillColor = C_BG_B; opt_pill_bg.lineColor = C_BD_B
-                opt_pill_lbl.color = C_TX_B
-            else:
-                opt_pill_bg.fillColor = C_BG_SEC; opt_pill_bg.lineColor = C_BD_SEC
-                opt_pill_lbl.color = C_TX_PRI
-            opt_pill_lbl.text = opt_header
-            opt_pill_bg.draw(); opt_pill_lbl.draw()
-        for k, t in enumerate(tiles):
-            if k == active_idx and k == n_green:
-                if opt_color == 'A':
-                    t.fillColor = C_BG_A; t.lineColor = C_BD_A
-                elif opt_color == 'B':
-                    t.fillColor = C_BG_B; t.lineColor = C_BD_B
-                else:
-                    t.fillColor = C_BG_SUCC; t.lineColor = C_BD_SUCC
-            elif k < n_green:
-                t.fillColor = C_BG_SUCC; t.lineColor = C_BD_SUCC
-            else:
-                t.fillColor = C_BG_SEC; t.lineColor = C_BD_SEC
-            t.draw()
-        if active_idx >= 0:
-            orange_border.pos = (tile_xs[active_idx], 70)
-            orange_border.draw()
-        color_cue.draw()
-        win.flip()
-
-    def play_option(path, n_confirmed, opt_label, opt_color):
-        for j in range(n_confirmed):
-            draw_scene(n_green=n_confirmed, active_idx=j,
-                       opt_header=opt_label, opt_color=opt_color)
-            tones[path[j]].play()
-            core.wait(duration)
-        draw_scene(n_green=n_confirmed, active_idx=n_confirmed,
-                   opt_header=opt_label, opt_color=opt_color)
-        tones[path[n_confirmed]].play()
-        core.wait(duration)
-
-    def play_animated(path, n_confirmed):
-        for j, note in enumerate(path):
-            draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None)
-            tones[note].play()
-            core.wait(duration)
-        draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None)
-
-    draw_scene(0, active_idx=-1, opt_header='', opt_color=None, show_prompt=True)
-    event.clearEvents()
-    clock.reset()
-    event.waitKeys()
-    rt = clock.getTime()
-
-    confirmed = []
-    for i in range(8):
-        correct = sequence[i]
-        offset = random.choice([-2, -1, 1, 2])
-        decoy = correct + offset
-
-        for note in [correct, decoy]:
-            if note not in tones:
-                tones[note] = sound.Sound(value=ConvertFreq(note), secs=duration,
-                                          stereo=True, hamming=True)
-
-        if random.choice([True, False]):
-            tone_A, tone_B, correct_is_A = correct, decoy, True
-        else:
-            tone_A, tone_B, correct_is_A = decoy, correct, False
-
-        play_option(confirmed + [tone_A], len(confirmed), '▶ Option A', 'A')
-        core.wait(0.4)
-        play_option(confirmed + [tone_B], len(confirmed), '▶ Option B', 'B')
-        core.wait(0.3)
-
-        chosen_label = 'Option A' if correct_is_A else 'Option B'
-        chosen_color = 'A' if correct_is_A else 'B'
-        draw_scene(len(confirmed), active_idx=i, opt_header=f'✓ {chosen_label}',
-                   opt_color=chosen_color, show_space=True)
-
-        event.clearEvents()
-        while True:
-            keys = event.getKeys(keyList=['space', 'escape'])
-            if 'escape' in keys:
-                core.quit()
-            if 'space' in keys:
-                break
-
-        confirmed.append(correct)
-        draw_scene(len(confirmed), active_idx=-1, opt_header='', opt_color=None)
-        core.wait(0.2)
-
-    play_animated(confirmed, n_confirmed=8)
-
-    draw_scene(8, active_idx=-1, opt_header='', opt_color=None)
-    win.color = orig_bg
-    return [rt] + [None] * 7, col
-
 def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
     path_tones = [tree[0]]
     path_probs = [prob_tree[0]]
@@ -454,6 +316,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
     C_BG_WARN = '#faeeda'; C_BD_WARN = '#e0a96a'
     C_BG_A    = '#e6f1fb'; C_TX_A    = '#185fa5'; C_BD_A    = '#85b7eb'
     C_BG_B    = '#faeeda'; C_TX_B    = '#854f0b'; C_BD_B    = '#e0a96a'
+    C_TX_PRI  = '#1a1a18'
 
     orig_bg = list(win.color)
     win.color = C_PAGE
@@ -562,6 +425,17 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
             core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
                    show_buttons=False)
+
+    def draw_intro():
+        card.draw()
+        prompt_txt = visual.TextStim(win, text='Remember the melody being composed by the computer',
+                                 pos=(0, 0), color=C_TX_PRI, height=27)
+        prompt_txt.draw()
+        win.flip()
+
+    draw_intro()
+    core.wait(2)
+
 
     play_root_tone(path_tones[0])
     RTs.append(0.0)
