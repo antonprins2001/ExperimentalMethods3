@@ -80,7 +80,8 @@ python super_script copy.py   # Working version — use this
 
 ### PsychoPy Experiment (`em3_project/`)
 
-- [super_script copy.py](em3_project/super_script copy.py) — **De-facto entry point** (387 linjer). Konsoliderer alt eksperimentflow i ét script: trial-funktioner, datacollection, gemmer `data/{subject_id}_trial_data.csv` og `data/{subject_id}_test_data.csv`. Fikser response-logic bugs fra `trial.py`. Brug dette.
+- [super_script copy.py](em3_project/super_script copy.py) — **De-facto entry point**. Selvstændig monolitisk fil: importerer fra modulerne øverst, men **redefinerer alle funktioner lokalt** (de importerede versioner bruges aldrig). Inkluderer forbedret card-baseret UI (tile-animationer, farvekodet A/B-valg), fikset response-logic, og gemmer `data/{subject_id}_trial_data.csv` + `data/{subject_id}_test_data.csv`. **Brug dette.**
+- [super_script.py](em3_project/super_script.py) — Ældre version med simplere UI (farvet firkant som cue). Har stadig `df.loc[0]`-buggen (linje 54) og mangler `Entropy` i `test_data`-kolonnen.
 - [main.py](em3_project/main.py) — Tiltænkt entry point; kalder `Experiment().run()` — **brudt** (ingen Experiment-klasse i experiment.py).
 - [experiment.py](em3_project/experiment.py) — Knap 20 linjer top-level kode uden Experiment-klasse; kører dog partialt (loader sequences, opretter vindue, kører trials). Matcher ikke `main.py`s interface.
 - [settings.py](em3_project/settings.py) — Config-funktioner: `getSettings()` (vindue 1200×800, bg=blue, duration=0.4s, keys=["z","m"]), `getSubjectInfo()`, `getSubjectCharacteristics()`, `checkIfEscape()`. Har dangling kode linje 36-37.
@@ -89,6 +90,8 @@ python super_script copy.py   # Working version — use this
 - [data_collecter.py](em3_project/data_collecter.py) — `CollectTrials(trial_seqs)`: orkestrerer trial-flow, kalder Memory/ProductionTrial + TestTrial, returnerer to DataFrames.
 - [participant.py](em3_project/participant.py) — Minimal datamodel (id + gruppe).
 - [block.py](em3_project/block.py) — Tom stub.
+
+> `EM3/CLAUDE.md` er en forældet kopi der siger `main.py` er entry point og at trial.py/condition_manager.py er stubs — ignorér den.
 
 ### Stimulus-generering (`em3_project/Sequence/`)
 
@@ -114,22 +117,25 @@ python super_script copy.py   # Working version — use this
 | `Position` | int | Hvilken tone (0-7) er ændret |
 | `Surprisal` | str (bool-tuple) | IC-betingelse: `(True,False)` = ns→s osv. |
 | `Probe` | int | MIDI-notenummer for probe-tonen |
-| `Sequence` | list[int] | 8 MIDI-noter |
-| `Probabilites` | list[float] | Surprisal-værdier per tone |
+| `Sequence` | list[int] | 8 MIDI-noter (lineær rækkefølge for Memorized; binært træ for Generated — 15 noder) |
+| `Probabilites` | list[float] | Surprisal-værdier per tone/node |
+| `Entropy` | list[float] | Entropi per tone/node |
 | `Alternatives` | list[tuple] | `(tone, prob)` alternativ ved change-position |
 
 **Output per deltager** (gemt i `data/`):
-- `{id}_trial_data.csv`: `Trial, Generated, Changed, Position, Tone, Surprise, Alternative, Alt_Surprise, RT`
-- `{id}_test_data.csv`: `Trial, Generated, Changed, Guess, Surprise_Cond, Old_Tone, Old_Tone_Surprise, New_Tone, New_Tone_Surprise, RT`
+- `{id}_trial_data.csv`: `Trial, Generated, Changed, Position, Tone, Surprise, Alternative, Alt_Surprise, Entropy, RT`
+- `{id}_test_data.csv`: `Trial, Generated, Changed, Guess, Surprise_Cond, Position, Old_Tone, Old_Tone_Surprise, New_Tone, New_Tone_Surprise, Entropy, RT`
 
 ## Known Issues (aktive bugs)
 
 | Fil | Linje | Problem |
 |-----|-------|---------|
 | `condition_manager.py` | 8 | `df.loc[0]` skal være `df.loc[i]` — alle trials er identiske |
+| `super_script.py` | 54 | Samme `df.loc[0]`-bug som condition_manager.py |
 | `trial.py` | ~108 | `not "z" in keys or "m" in keys` er altid True — response-logic er brudt (fikset i `super_script copy.py`) |
 | `experiment.py` | — | Ingen `Experiment`-klasse; matcher ikke `main.py` |
 | `settings.py` | 36-37 | DataFrame-save uden kontekst — krasjer ved import |
+| `super_script copy.py` + `super_script.py` | CollectTrials | `trial_file`/`test_file` er kun defineret inde i `if seq_data["Generated"]`-blokken — `NameError` hvis første trial er Memorized |
 
 ## Vigtige advarsler
 
