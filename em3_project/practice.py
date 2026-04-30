@@ -25,7 +25,23 @@ def PracticeTrials(trial_seqs):
     win.flip()
     event.waitKeys()
 
-    RTs, color = MemoryTrial(memory_practice["Sequence"])
+    RTs, color = MemoryTrial(tree=memory_practice["Sequence"],
+        prob_tree=memory_practice["Probabilites"],
+        entropy_tree=memory_practice["Entropy"],
+        altposition=memory_practice["Position"])
+    
+    memory_result = MemoryTrial(
+    tree=memory_practice["Sequence"],
+    prob_tree=memory_practice["Probabilites"],
+    entropy_tree=memory_practice["Entropy"],
+    altposition=memory_practice["Position"]
+)
+    
+    path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = memory_result
+
+    seq = path_tones.copy()
+    probs = path_probs.copy()
+    ents = path_entropy.copy()
 
     seq = memory_practice["Sequence"].copy()
 
@@ -109,4 +125,4 @@ def PracticeTrials(trial_seqs):
     win.flip()
     event.waitKeys()
 
-def CollectTrials(trial_seqs, subject_id):
+
