@@ -99,6 +99,14 @@ def GeneratePracticeTrials(path):
 
 import random
 
+def introMessage():
+    intro = visual.TextStim(win, text= "Welcome to the experiment! You will in the following hour be doing both memorization of a small 8-tones melodies, " \
+    "aswell as producong your own melody thorugh 8 binary choices between two tones. You job is to remember the melodies, and afterwards determine whether it has been changed or not." \
+    "We start off with som practice trials. Press any key to start.", pos= [0, 0], color=text_color)
+    intro.draw()
+    win.flip()
+    event.waitKeys()
+
 def ConvertFreq(tone):
     return round(440 * (2**((int(tone) - 69)/12)), 3)
 
