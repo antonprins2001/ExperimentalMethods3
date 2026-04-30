@@ -15,7 +15,7 @@ from condition_manager import GenerateTrials
 def getSettings():
     fullscreen = False
     window_size = (1200, 800)
-    bg_color = "blue"
+    bg_color = [0.867, 0.851, 0.812]
     text_color = "white"
 
     duration = 0.4
@@ -69,6 +69,21 @@ def trigger(code, port):
     print('trigger sent {}'.format(code))
 
 def GenerateTrials(path):
+    df_order = pd.read_csv(path)
+    df = df_order.sample(frac=1).reset_index(drop=True)
+    
+
+    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
+        df[col] = df[col].apply(ast.literal_eval)
+
+    trial_data = []
+    for i in range(len(df.index)):
+        trial = df.iloc[i].to_dict()
+        trial["trial"] = i
+        trial_data.append(trial)
+    return trial_data
+
+def GeneratePracticeTrials(path):
     df_order = pd.read_csv(path)
     df = df_order.sample(frac=1).reset_index(drop=True)
     
@@ -683,9 +698,9 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         if 'escape' in keys:
             core.quit()
         if 'z' in keys:
-            guess = True; response = True   # z = left = Ja, samme
+            guess = False; response = True   # z = left = Ja, samme
         if 'm' in keys:
-            guess = False; response = True  # m = right = Nej, forskellig
+            guess = True; response = True  # m = right = Nej, forskellig
 
     rt = clock.getTime()
     win.color = orig_bg
@@ -780,7 +795,7 @@ def CollectTrials(trial_seqs, subject_id):
                                     entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
             path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
 
-            for i in range(len(seq_data["Sequence"])):
+            for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
                 trial_data["Generated"].append(False)
                 trial_data["Changed"].append(seq_data["Change"])
