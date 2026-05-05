@@ -917,12 +917,7 @@ fullscreen, window_size, bg_color, text_color, duration, response_keys = getSett
 win = visual.Window(
     size=window_size, 
     color = bg_color, 
-    units = "pix", 
-    fullscr=fullscreen, 
-    screen=0,
-    waitBlanking=False,
-    allowGUI=False,
-    winType='pyglet'
+    units = "pix"
     )
 clock = core.Clock()
 #port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)  # address for serial port is COM4 in this example. Change to match your machine.
