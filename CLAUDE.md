@@ -51,12 +51,42 @@ Pipeline: MSD metadata-filtrering → LMD-matched MIDI-udtræk → melodisporisi
 
 ## EEG
 
-Tre kandidat-roller (ikke endeligt afklaret):
-1. **Manipulation check**: MMN/P600 ved høj vs. lav IC bekræfter at manipulationen virker
-2. **Primært outcome**: Old/new-effekt (FN400, LPC) stærkere for genererede vs. memoriserede melodier
-3. **Mekanistisk probe**: IC under encoding predikterer later recall (EEG som mediator)
-
 IDyOM-afledt per-tone surprisal er den centrale computationelle variabel.
+
+### ERP-komponenter og deres rolle
+
+| Komponent | Latens | Distribution | Fase | Rolle |
+|-----------|--------|--------------|------|-------|
+| **N1** | ~100 ms | Fronto-central | Encoding (per tone-onset) | Tidlig auditiv opmærksomhed og akustisk overraskelse — forventes større amplitude ved høj IC |
+| **P200** | ~200 ms | Fronto-central | Encoding (per tone-onset) | Automatisk processering af tonale forventninger — forventes moduleret af IC |
+| **P300** | ~300–500 ms | Centro-parietal (P3b) / Frontal (P3a) | Encoding + test-fase | Under encoding: kontekstopdatering ved høj-IC toner. Under test: change-detection markør — forventes forstærket for Genereret-betingelse |
+| **FN400** | ~300–500 ms | Fronto-central | Test-fase | Familiarity-baseret old/new-effekt — uændret probe → mere positiv FN400. Hypotese: stærkere for Genereret > Memoriseret |
+
+### Mapping til hypoteser
+
+**H1 – Generationseffekten:**
+- FN400 (test-fase): Stærkere old/new-forskel for Genereret > Memoriseret
+- P300 (test-fase): Større change-detection respons for Genereret > Memoriseret
+
+**H2 – IC og enkodning:**
+- N1 + P200 (encoding, per-tone): Amplitude korrelerer med per-tone IC
+- P300 (encoding): Forstærket kontekstopdatering ved uventede (høj-IC) toner
+
+### Trigger-krav (hvad mangler i eeg.py)
+
+| Trigger-type | Tidspunkt | Indhold |
+|---|---|---|
+| Tone-onset (encoding) | Hvert tone-onset under Memorized + Generated | Betingelse (1/2) + tone-nummer (0–7) + IC-niveau |
+| Probe-onset (test) | Når probe-melodien starter | Betingelse (1/2) + same/changed (0/1) + surprisal-condition (0–4) |
+| Response | Tasterespons | Korrekt/forkert |
+
+Den nuværende `TestTriggerCode` i `eeg.py` dækker delvist probe-onset, men encoding-triggers og response-triggers mangler. `ProductionTrial` i `eeg.py` kalder aldrig `trigger()`.
+
+### Fravalgte komponenter
+
+- **MMN**: Kræver passiv oddball-paradigme — passer ikke til aktivt 2AFC-design
+- **P600**: Primært syntaktisk reanalyse i sprog — svag teoretisk begrundelse her
+- **LPC**: Potentielt relevant (recollection), men nedprioriteret da familiarity (FN400) er den primære mekanisme i change-detection
 
 ## Nøglelitteratur
 
