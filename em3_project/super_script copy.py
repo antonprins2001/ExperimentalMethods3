@@ -685,7 +685,7 @@ def PracticeTrials(practice_seqs):
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             seq = path_tones
             probs = path_probs
@@ -711,7 +711,7 @@ def PracticeTrials(practice_seqs):
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             seq = path_tones
             probs = path_probs
@@ -729,12 +729,9 @@ def PracticeTrials(practice_seqs):
 
         else:
             if seq_data["Generated"]:
-                new_seq, alt_prob = GenerateNewSeq(
-                    seq.copy(),
-                    seq_data["Position"],
-                    seq_data["Alternatives"],
-                    altpos
-                )
+                pos = seq_data["Position"]
+                new_seq = seq.copy()
+                new_seq[pos - 1] = alt_tones[pos]
             else:
                 new_seq, alt_prob = GenerateNewSeq(
                     seq.copy(),
@@ -774,11 +771,9 @@ def PracticeTrials(practice_seqs):
 
 
 def GenerateNewSeq(seq, pos, alts, altpos):
-    
-    new_seq = seq
+    new_seq = seq.copy()
     alt_tone, alt_prob = alts[altpos]
     new_seq[pos-1] = alt_tone
-
     return new_seq, alt_prob
 
 def CollectTrials(trial_seqs, subject_id):
@@ -820,7 +815,7 @@ def CollectTrials(trial_seqs, subject_id):
         if seq_data["Generated"]:
             trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                     entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -841,7 +836,7 @@ def CollectTrials(trial_seqs, subject_id):
         else: #Memorization task
             trial = MemoryTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                     entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -879,7 +874,10 @@ def CollectTrials(trial_seqs, subject_id):
 
         else:
             if seq_data["Generated"]:
-                new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
+                pos = seq_data["Position"]
+                new_seq = seq.copy()
+                new_seq[pos - 1] = alt_tones[pos]
+                alt_prob = alt_probs[pos]
             else:
                 new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], [seq_data["Alternatives"]], 0)
             test = TestTrial(new_seq, True, seq_data["Position"], color, seq_data["Generated"], seq_data["Surprisal"])

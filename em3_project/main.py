@@ -7,7 +7,7 @@ import serial
 
 def getSettings():
     fullscreen = True
-    window_size = (1200, 800)
+    window_size = (1400, 1000)
     bg_color = [0.867, 0.851, 0.812]
     text_color = "black"
 

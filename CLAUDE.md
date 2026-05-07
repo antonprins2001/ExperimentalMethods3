@@ -119,7 +119,7 @@ Triggers sendes via `serial.Serial("COM4", 115200)` — falder tilbage til mock-
 ```bash
 source .venv/bin/activate
 cd em3_project
-python super_script copy.py   # Working version — use this
+python main.py   # Working version — use this
 ```
 
 `main.py` + `experiment.py` er i øjeblikket brudt (se Known Issues). Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).
