@@ -819,7 +819,7 @@ def CollectTrials(trial_seqs, subject_id):
     test_file  = f"data/{subject_id}_test_data.csv"
 
     for trial_num, seq_data in enumerate(trial_seqs):
-
+        print(f"Gen: {seq_data['Generated']}. Change: {seq_data['Change']}. Pos: {seq_data['Position']}. Surprisal: {seq_data['Surprisal']}")
         if seq_data["Generated"]:
             trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                     entropy_tree=seq_data["Entropy"], pitch_tree=seq_data["PitchDif"], altposition=seq_data["Position"])

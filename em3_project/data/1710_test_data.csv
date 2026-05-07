@@ -1,8 +1,0 @@
-Trial,Generated,Changed,Guess,Surprise_Cond,Position,Old_Tone,Old_Tone_Surprise,New_Tone,New_Tone_Surprise,PitchDif,Entropy,RT
-0,False,False,False,False,,,,,,,,1.2060756250284612
-1,True,False,False,False,,,,,,,,1.0506103339139372
-2,True,False,False,False,,,,,,,,1.8199412919348106
-3,True,True,True,"(True, True)",3.0,71.0,6.709347151682694,64.0,4.051658647758927e-05,-7.0,3.213264605693454,0.600346083054319
-4,True,False,False,False,,,,,,,,1.1714068750152364
-5,True,False,False,False,,,,,,,,0.8777753749163821
-6,False,False,True,False,,,,,,,,0.5808862500125542
