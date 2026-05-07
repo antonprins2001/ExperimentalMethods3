@@ -921,8 +921,8 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Entropy"].append(ents[seq_data["Position"]-1])
             test_data["RT"].append(rt)
 
-        pd.DataFrame(trial_data).to_csv(trial_file, index=False)
-        pd.DataFrame(test_data).to_csv(test_file, index=False)
+            pd.DataFrame({k: v[-8:] for k,v in trial_data.items()}).to_csv(trial_file, index=False)
+            pd.DataFrame({k: v[-1] for k,v in test_data.items()}).to_csv(test_file, index=False)
 
     return test_data, trial_data
 
