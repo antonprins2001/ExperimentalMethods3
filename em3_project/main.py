@@ -909,7 +909,7 @@ def CollectTrials(trial_seqs, subject_id):
 
     return test_data, trial_data
 
-path = "Sequence/sequences.csv"
+path = "Sequence/sequences_new.csv"
 practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
