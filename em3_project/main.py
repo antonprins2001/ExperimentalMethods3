@@ -301,11 +301,11 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     RTs.append(0.0)
 
     parent = 0
+    altpos = -1
 
     for i in range(7):
         child1 = 2 * (parent + 1) - 1
         child2 = 2 * (parent + 1)
-        altpos = -1
         n_confirmed = len(path_tones)
 
         play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
@@ -502,11 +502,11 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     RTs.append(0.0)
 
     parent = 0
+    parent - 2**i + 1
 
     for i in range(7):
         child1 = 2 * (parent + 1) - 1
         child2 = 2 * (parent + 1)
-        altpos = -1
         n_confirmed = len(path_tones)
 
         play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
@@ -919,7 +919,7 @@ fullscreen, window_size, bg_color, text_color, duration, response_keys = getSett
 win = visual.Window(
     size=window_size, 
     color = bg_color, 
-    units = "pix"
+    units = "pix",
     )
 clock = core.Clock()
 #port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)  # address for serial port is COM4 in this example. Change to match your machine.
