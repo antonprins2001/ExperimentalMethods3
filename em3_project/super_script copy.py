@@ -623,6 +623,7 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         tones[note].play()
         core.wait(duration)
 
+    win.callOnFlip(trigger, 80)
     draw_test(active_idx=-1, show_buttons=True)
     event.clearEvents()
     clock.reset()
