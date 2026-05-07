@@ -51,12 +51,60 @@ Pipeline: MSD metadata-filtrering → LMD-matched MIDI-udtræk → melodisporisi
 
 ## EEG
 
-Tre kandidat-roller (ikke endeligt afklaret):
-1. **Manipulation check**: MMN/P600 ved høj vs. lav IC bekræfter at manipulationen virker
-2. **Primært outcome**: Old/new-effekt (FN400, LPC) stærkere for genererede vs. memoriserede melodier
-3. **Mekanistisk probe**: IC under encoding predikterer later recall (EEG som mediator)
-
 IDyOM-afledt per-tone surprisal er den centrale computationelle variabel.
+
+### ERP-komponenter og deres rolle
+
+| Komponent | Latens | Distribution | Fase | Rolle |
+|-----------|--------|--------------|------|-------|
+| **N1** | ~100 ms | Fronto-central | Encoding (per tone-onset) | Tidlig auditiv opmærksomhed og akustisk overraskelse — forventes større amplitude ved høj IC |
+| **P200** | ~200 ms | Fronto-central | Encoding (per tone-onset) | Automatisk processering af tonale forventninger — forventes moduleret af IC |
+| **P300** | ~300–500 ms | Centro-parietal (P3b) / Frontal (P3a) | Encoding + test-fase | Under encoding: kontekstopdatering ved høj-IC toner. Under test: change-detection markør — forventes forstærket for Genereret-betingelse |
+| **FN400** | ~300–500 ms | Fronto-central | Test-fase | Familiarity-baseret old/new-effekt — uændret probe → mere positiv FN400. Hypotese: stærkere for Genereret > Memoriseret |
+
+### Mapping til hypoteser
+
+**H1 – Generationseffekten:**
+- FN400 (test-fase): Stærkere old/new-forskel for Genereret > Memoriseret
+- P300 (test-fase): Større change-detection respons for Genereret > Memoriseret
+
+**H2 – IC og enkodning:**
+- N1 + P200 (encoding, per-tone): Amplitude korrelerer med per-tone IC
+- P300 (encoding): Forstærket kontekstopdatering ved uventede (høj-IC) toner
+
+### Trigger-implementering (i `super_script copy.py`)
+
+Triggers sendes via `serial.Serial("COM4", 115200)` — falder tilbage til mock-print hvis porten ikke er tilgængelig.
+
+**Encoding-triggers** — `EncodingTriggerCode(generated, position)` → 2-cifret kode `[condition][position]`:
+- Condition: `1` = Memorized, `2` = Generated
+- Position: tone-nummer 0–7
+- Sendes via `win.callOnFlip()` i `play_animated()` i både `MemoryTrial` og `ProductionTrial`
+
+**Test-triggers** — `TestTriggerCode(generated, surprisal, position)` → 3-cifret kode `[condition][surprisal_cond][position]`:
+- Surprisal-condition: `0` = ingen change / ikke-changed tone, `1`=(T,T), `2`=(F,F), `3`=(F,T), `4`=(T,F)
+- Sendes per tone-onset under probe-afspilning via `win.callOnFlip()`
+- Hardkodet `80`: decision-onset (response-knapper vises)
+- Hardkodet `90`: response-timestamp (umiddelbart efter tastetryk)
+
+| Trigger-type | Kode | Tidspunkt | Implementeret |
+|---|---|---|---|
+| Tone-onset encoding | `[1/2][0-7]` | `play_animated()` — kun ved afsluttende replay | Ja |
+| Tone-onset test (probe) | `[1/2][0-4][0-7]` | Hvert tone-onset i probe | Ja |
+| Decision-onset | `80` | Når respons-knapper vises | Ja |
+| Response | `90` | Umiddelbart efter tastetryk | Ja |
+
+**Kendte mangler i trigger-implementeringen:**
+- **Ingen IC i encoding-koden**: `EncodingTriggerCode` indkoder kun condition + position — IC-niveau er ikke inkluderet, hvilket begrænser muligheden for at epochere på IC-niveau under encoding uden at merge med CSV-data i post-processing.
+- **Option-toner triggeres ikke**: `play_option()` (A/B-præsentationerne under valg-fasen) sender ingen triggers — N1/P200 til selve beslutningstonerne kan ikke analyseres.
+- **Triggers fyres under practice**: `PracticeTrials()` kalder `ProductionTrial`/`MemoryTrial` som indeholder trigger-kald — forurener EEG-optagelsen med practice-data.
+- **Ingen trial-onset marker**: Ingen trigger markerer starten af en ny trial eller encoding-onset.
+
+### Fravalgte komponenter
+
+- **MMN**: Kræver passiv oddball-paradigme — passer ikke til aktivt 2AFC-design
+- **P600**: Primært syntaktisk reanalyse i sprog — svag teoretisk begrundelse her
+- **LPC**: Potentielt relevant (recollection), men nedprioriteret da familiarity (FN400) er den primære mekanisme i change-detection
 
 ## Nøglelitteratur
 
@@ -71,7 +119,7 @@ IDyOM-afledt per-tone surprisal er den centrale computationelle variabel.
 ```bash
 source .venv/bin/activate
 cd em3_project
-python super_script copy.py   # Working version — use this
+python main.py   # Working version — use this
 ```
 
 `main.py` + `experiment.py` er i øjeblikket brudt (se Known Issues). Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).

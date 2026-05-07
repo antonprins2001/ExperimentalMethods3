@@ -4,7 +4,7 @@ import ast
 import numpy as np
 import os
 import serial
-from participant import Participant
+
 
 def getSettings():
     fullscreen = False
@@ -58,9 +58,9 @@ def TestTriggerCode(generated, surprisal, position):
     code = cond + surp + pos
     return(int(code))
 
-def trigger(code, port):
-    port.write(code.to_bytes(1, 'big'))
-    print('trigger sent {}'.format(code))
+def EncodingTriggerCode(generated, position):
+    cond = "2" if generated else "1"
+    return int(cond + str(position))
 
 def GenerateTrials(path):
     df_order = pd.read_csv(path)
@@ -246,6 +246,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
+            win.callOnFlip(trigger, EncodingTriggerCode(False, j))
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
             tones[note].play()
@@ -478,6 +479,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
+            win.callOnFlip(trigger, EncodingTriggerCode(True, j))
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
             tones[note].play()
@@ -612,15 +614,16 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
     event.waitKeys()
 
     for i, note in enumerate(seq):
-        draw_test(active_idx=i, show_buttons=False)
         if i == pos - 1 and change:
             code = TestTriggerCode(generated, surprisal, i)
         else:
             code = TestTriggerCode(generated, False, i)
-        #trigger(code, port)
+        win.callOnFlip(trigger, code)
+        draw_test(active_idx=i, show_buttons=False)
         tones[note].play()
         core.wait(duration)
 
+    win.callOnFlip(trigger, 80)
     draw_test(active_idx=-1, show_buttons=True)
     event.clearEvents()
     clock.reset()
@@ -636,6 +639,7 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
             guess = True; response = True  # m = right = Nej, forskellig
 
     rt = clock.getTime()
+    trigger(90)
     win.color = orig_bg
 
     def draw_feedback(correct):
@@ -681,7 +685,7 @@ def PracticeTrials(practice_seqs):
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             seq = path_tones
             probs = path_probs
@@ -707,7 +711,7 @@ def PracticeTrials(practice_seqs):
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             seq = path_tones
             probs = path_probs
@@ -725,12 +729,9 @@ def PracticeTrials(practice_seqs):
 
         else:
             if seq_data["Generated"]:
-                new_seq, alt_prob = GenerateNewSeq(
-                    seq.copy(),
-                    seq_data["Position"],
-                    seq_data["Alternatives"],
-                    altpos
-                )
+                pos = seq_data["Position"]
+                new_seq = seq.copy()
+                new_seq[pos - 1] = alt_tones[pos]
             else:
                 new_seq, alt_prob = GenerateNewSeq(
                     seq.copy(),
@@ -770,11 +771,9 @@ def PracticeTrials(practice_seqs):
 
 
 def GenerateNewSeq(seq, pos, alts, altpos):
-    
-    new_seq = seq
+    new_seq = seq.copy()
     alt_tone, alt_prob = alts[altpos]
     new_seq[pos-1] = alt_tone
-
     return new_seq, alt_prob
 
 def CollectTrials(trial_seqs, subject_id):
@@ -816,7 +815,7 @@ def CollectTrials(trial_seqs, subject_id):
         if seq_data["Generated"]:
             trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                     entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -837,7 +836,7 @@ def CollectTrials(trial_seqs, subject_id):
         else: #Memorization task
             trial = MemoryTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                     entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -875,7 +874,10 @@ def CollectTrials(trial_seqs, subject_id):
 
         else:
             if seq_data["Generated"]:
-                new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
+                pos = seq_data["Position"]
+                new_seq = seq.copy()
+                new_seq[pos - 1] = alt_tones[pos]
+                alt_prob = alt_probs[pos]
             else:
                 new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], [seq_data["Alternatives"]], 0)
             test = TestTrial(new_seq, True, seq_data["Position"], color, seq_data["Generated"], seq_data["Surprisal"])
@@ -908,7 +910,19 @@ practice_seqs = GeneratePracticeTrials(practice_path)
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
 win = visual.Window(size=window_size, color = bg_color, units = "pix")
 clock = core.Clock()
-#port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)  # address for serial port is COM4 in this example. Change to match your machine.
+try:
+    port = serial.Serial("COM4", 115200)  # Tilpas port-adresse til maskinen
+    port_type = 'serial'
+except:
+    port_type = 'not set'
+
+if port_type == 'serial':
+    def trigger(code):
+        port.write(code.to_bytes(1, 'big'))
+        print('trigger sent {}'.format(code))
+else:
+    def trigger(code):
+        print('[mock] trigger {}'.format(code))
 
 subject_id = getSubjectInfo()
 
