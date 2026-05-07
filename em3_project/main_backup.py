@@ -5,6 +5,8 @@ import numpy as np
 import os
 import serial
 
+SIMULATE = True  # Set True to run without manual input (auto-responds to all prompts)
+
 def getSettings():
     fullscreen = True
     window_size = (1400, 1000)
@@ -18,6 +20,8 @@ def getSettings():
     return fullscreen, window_size, bg_color, text_color, duration, response_keys
 
 def getSubjectInfo():
+    if SIMULATE:
+        return 999
     info = {'FID': 0}
     dlg = gui.DlgFromDict(dictionary=info, title='Music and Memory Experiment')
     if not dlg.OK:
@@ -112,7 +116,8 @@ def introMessage():
     card.draw()
     intro.draw()
     win.flip()
-    event.waitKeys()
+    if not SIMULATE:
+        event.waitKeys()
 
 def ConvertFreq(tone):
     return round(440 * (2**((int(tone) - 69)/12)), 3)
@@ -228,28 +233,32 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
             draw_scene(n_green=n_confirmed, active_idx=j,
                        opt_header=opt_label, opt_color=opt_color,
                        show_buttons=False)
-            tones[path[j]].play()
-            core.wait(duration)
+            if not SIMULATE:
+                tones[path[j]].play()
+                core.wait(duration)
         draw_scene(n_green=n_confirmed, active_idx=n_confirmed,
                    opt_header=opt_label, opt_color=opt_color,
                    show_buttons=False)
-        tones[path[n_confirmed]].play()
-        core.wait(duration)
+        if not SIMULATE:
+            tones[path[n_confirmed]].play()
+            core.wait(duration)
         # No trailing draw — buttons appear immediately after option B finishes
 
     def play_root_tone(note):
         draw_scene(n_green=1, active_idx=0, opt_header='', opt_color=None, show_buttons=False)
-        tones[note].play()
-        core.wait(duration)
-        core.wait(1.0)
+        if not SIMULATE:
+            tones[note].play()
+            core.wait(duration)
+            core.wait(1.0)
         draw_scene(1, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
-            tones[note].play()
-            core.wait(duration)
+            if not SIMULATE:
+                tones[note].play()
+                core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
                    show_buttons=False)
 
@@ -323,6 +332,8 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
         event.clearEvents()
         response = False
+        if SIMULATE:
+            response = True
         while not response:
             keys = event.getKeys(keyList=['space', 'escape'])
             if 'escape' in keys:
@@ -462,28 +473,32 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
             draw_scene(n_green=n_confirmed, active_idx=j,
                        opt_header=opt_label, opt_color=opt_color,
                        show_buttons=False)
-            tones[path[j]].play()
-            core.wait(duration)
+            if not SIMULATE:
+                tones[path[j]].play()
+                core.wait(duration)
         draw_scene(n_green=n_confirmed, active_idx=n_confirmed,
                    opt_header=opt_label, opt_color=opt_color,
                    show_buttons=False)
-        tones[path[n_confirmed]].play()
-        core.wait(duration)
+        if not SIMULATE:
+            tones[path[n_confirmed]].play()
+            core.wait(duration)
         # No trailing draw — buttons appear immediately after option B finishes
 
     def play_root_tone(note):
         draw_scene(n_green=1, active_idx=0, opt_header='', opt_color=None, show_buttons=False)
-        tones[note].play()
-        core.wait(duration)
-        core.wait(1.0)
+        if not SIMULATE:
+            tones[note].play()
+            core.wait(duration)
+            core.wait(1.0)
         draw_scene(1, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
-            tones[note].play()
-            core.wait(duration)
+            if not SIMULATE:
+                tones[note].play()
+                core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
                    show_buttons=False)
 
@@ -518,6 +533,12 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
         event.clearEvents()
         response = False
+        if SIMULATE:
+            if random.random() < 0.5:
+                choice = child1; alt = child2
+            else:
+                choice = child2; alt = child1
+            response = True
         while not response:
             keys = event.getKeys(keyList=['z', 'm', 'escape'])
             if 'escape' in keys:
@@ -611,7 +632,8 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         win.flip()
 
     draw_test(active_idx=-1, show_buttons=False, show_prompt=True)
-    event.waitKeys()
+    if not SIMULATE:
+        event.waitKeys()
 
     for i, note in enumerate(seq):
         draw_test(active_idx=i, show_buttons=False)
@@ -620,24 +642,28 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         else:
             code = TestTriggerCode(generated, False, i)
         #trigger(code, port)
-        tones[note].play()
-        core.wait(duration)
+        if not SIMULATE:
+            tones[note].play()
+            core.wait(duration)
 
     draw_test(active_idx=-1, show_buttons=True)
     event.clearEvents()
     clock.reset()
 
-    response = False
-    while not response:
-        keys = event.getKeys(keyList=['z', 'm', 'escape'])
-        if 'escape' in keys:
-            core.quit()
-        if 'z' in keys:
-            guess = False; response = True   # z = left = Ja, samme
-        if 'm' in keys:
-            guess = True; response = True  # m = right = Nej, forskellig
-
-    rt = clock.getTime()
+    if SIMULATE:
+        guess = random.choice([True, False])
+        rt = random.uniform(0.4, 2.0)
+    else:
+        response = False
+        while not response:
+            keys = event.getKeys(keyList=['z', 'm', 'escape'])
+            if 'escape' in keys:
+                core.quit()
+            if 'z' in keys:
+                guess = False; response = True   # z = left = Ja, samme
+            if 'm' in keys:
+                guess = True; response = True  # m = right = Nej, forskellig
+        rt = clock.getTime()
     win.color = orig_bg
 
     def draw_feedback(correct):
@@ -728,10 +754,12 @@ def PracticeTrials(practice_seqs):
             )
 
         else:
-            pos = seq_data["Position"]
-            new_seq = seq.copy()
-            new_seq[pos - 1] = alt_tones[pos]
-            alt_prob = alt_probs[pos]
+            new_seq, alt_prob = GenerateNewSeq(
+                seq.copy(),
+                seq_data["Position"],
+                seq_data["Alternatives"],
+                altpos
+            )
 
             guess, rt = TestTrial(
                 new_seq,
@@ -875,10 +903,7 @@ def CollectTrials(trial_seqs, subject_id):
 
 
         else:
-            pos = seq_data["Position"]
-            new_seq = seq.copy()
-            new_seq[pos - 1] = alt_tones[pos]
-            alt_prob = alt_probs[pos]
+            new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
             test = TestTrial(new_seq, True, seq_data["Position"], color, seq_data["Generated"], seq_data["Surprisal"])
             guess, rt = test
 
@@ -901,7 +926,7 @@ def CollectTrials(trial_seqs, subject_id):
 
     return test_data, trial_data
 
-path = "Sequence/sequences_new.csv"
+path = "Sequence/sequences_test.csv"
 practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
