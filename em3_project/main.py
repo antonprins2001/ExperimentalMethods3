@@ -303,7 +303,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     parent = 0
     altpos = -1
 
-    for i in range(7):
+    for i in range(2,9,1):
         child1 = 2 * (parent + 1) - 1
         child2 = 2 * (parent + 1)
         n_confirmed = len(path_tones)
@@ -333,7 +333,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = (parent - 2**i + 1) // 2
+            altpos = (parent - 2**(i-2) + 1)
 
         parent = choice
         path_tones.append(tree[choice])
@@ -504,7 +504,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     parent = 0
     altpos = -1
 
-    for i in range(7):
+    for i in range(2, 9, 1):
         child1 = 2 * (parent + 1) - 1
         child2 = 2 * (parent + 1)
         n_confirmed = len(path_tones)
@@ -531,7 +531,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = (parent - 2**i + 1) // 2
+            altpos = (parent - 2**(i-2) + 1)
 
         parent = choice
         path_tones.append(tree[choice])
@@ -909,7 +909,7 @@ def CollectTrials(trial_seqs, subject_id):
 
     return test_data, trial_data
 
-path = "Sequence/sequences_new.csv"
+path = "Sequence/sequences_test.csv"
 practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
