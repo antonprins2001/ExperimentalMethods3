@@ -654,7 +654,7 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         textstim.draw()
         col_cue.draw()
         win.flip()
-        core.wait(1)
+        core.wait(0.3)
 
     draw_feedback((guess==change))
 
@@ -680,11 +680,12 @@ def PracticeTrials(practice_seqs):
             trial = ProductionTrial(
                 tree=seq_data["Sequence"],
                 prob_tree=seq_data["Probabilites"],
+                pitch_tree=seq_data["PitchDif"],
                 entropy_tree=seq_data["Entropy"],
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color, altpos = trial
 
             seq = path_tones
             probs = path_probs
@@ -706,11 +707,12 @@ def PracticeTrials(practice_seqs):
             trial = MemoryTrial(
                 tree=seq_data["Sequence"],
                 prob_tree=seq_data["Probabilites"],
+                pitch_tree=seq_data["PitchDif"],
                 entropy_tree=seq_data["Entropy"],
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, altpos = trial
+            path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color, altpos = trial
 
             seq = path_tones
             probs = path_probs
@@ -774,7 +776,7 @@ def PracticeTrials(practice_seqs):
 
 def GenerateNewSeq(seq, pos, alts, altpos):
     
-    new_seq = seq
+    new_seq = seq.copy()
     alt_tone, alt_prob = alts[altpos]
     new_seq[pos-1] = alt_tone
 
