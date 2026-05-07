@@ -349,6 +349,12 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
     draw_scene(8, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
     win.color = orig_bg
+
+    for t in tones.values():
+        t.stop()
+        del t
+    tones = {}
+
     return path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, col, altpos
 
 def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
@@ -545,6 +551,12 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
     draw_scene(8, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
     win.color = orig_bg
+
+    for t in tones.values():
+        t.stop()
+        del t
+    tones = {}
+
     return path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, col, altpos
 
 def TestTrial(seq, change, pos, col, generated, surprisal):
@@ -657,6 +669,11 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         core.wait(0.3)
 
     draw_feedback((guess==change))
+
+    for t in tones.values():
+        t.stop()
+        del t
+    tones = {}
 
     return guess, rt
 
@@ -909,7 +926,7 @@ def CollectTrials(trial_seqs, subject_id):
 
     return test_data, trial_data
 
-path = "Sequence/sequences_test.csv"
+path = "Sequence/sequences_new.csv"
 practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
