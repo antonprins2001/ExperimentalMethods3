@@ -79,7 +79,7 @@ def GenerateTrials(path):
 def GeneratePracticeTrials(path):
     df = pd.read_csv(path)
     
-    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
+    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy", "PitchDif"]:
         df[col] = df[col].apply(safe_literal_eval)
 
     trial_data = []
@@ -333,7 +333,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = parent - 2**i + 1
+            altpos = (parent - 2**i + 1) // 4
 
         parent = choice
         path_tones.append(tree[choice])
@@ -502,7 +502,6 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     RTs.append(0.0)
 
     parent = 0
-    parent - 2**i + 1
 
     for i in range(7):
         child1 = 2 * (parent + 1) - 1
@@ -531,7 +530,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = parent - 2**i + 1
+            altpos = (parent - 2**i + 1) // 4
 
         parent = choice
         path_tones.append(tree[choice])
@@ -729,20 +728,10 @@ def PracticeTrials(practice_seqs):
             )
 
         else:
-            if seq_data["Generated"]:
-                new_seq, alt_prob = GenerateNewSeq(
-                    seq.copy(),
-                    seq_data["Position"],
-                    seq_data["Alternatives"],
-                    altpos
-                )
-            else:
-                new_seq, alt_prob = GenerateNewSeq(
-                    seq.copy(),
-                    seq_data["Position"],
-                    [seq_data["Alternatives"]],
-                    0
-                )
+            pos = seq_data["Position"]
+            new_seq = seq.copy()
+            new_seq[pos - 1] = alt_tones[pos]
+            alt_prob = alt_probs[pos]
 
             guess, rt = TestTrial(
                 new_seq,
@@ -886,7 +875,10 @@ def CollectTrials(trial_seqs, subject_id):
 
 
         else:
-            new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], seq_data["Alternatives"], altpos)
+            pos = seq_data["Position"]
+            new_seq = seq.copy()
+            new_seq[pos - 1] = alt_tones[pos]
+            alt_prob = alt_probs[pos]
             test = TestTrial(new_seq, True, seq_data["Position"], color, seq_data["Generated"], seq_data["Surprisal"])
             guess, rt = test
 
