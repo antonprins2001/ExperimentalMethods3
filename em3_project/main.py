@@ -333,7 +333,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = parent - 2**i + 1
+            altpos = (parent - 2**i + 1) // 2
 
         parent = choice
         path_tones.append(tree[choice])
@@ -502,7 +502,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     RTs.append(0.0)
 
     parent = 0
-    parent - 2**i + 1
+    altpos = -1
 
     for i in range(7):
         child1 = 2 * (parent + 1) - 1
@@ -531,7 +531,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = parent - 2**i + 1
+            altpos = (parent - 2**i + 1) // 2
 
         parent = choice
         path_tones.append(tree[choice])
