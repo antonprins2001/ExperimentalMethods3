@@ -5,10 +5,9 @@ import numpy as np
 import os
 import serial
 
-
 def getSettings():
-    fullscreen = False
-    window_size = (1200, 800)
+    fullscreen = True
+    window_size = (1400, 1000)
     bg_color = [0.867, 0.851, 0.812]
     text_color = "black"
 
@@ -58,16 +57,16 @@ def TestTriggerCode(generated, surprisal, position):
     code = cond + surp + pos
     return(int(code))
 
-def EncodingTriggerCode(generated, position):
-    cond = "2" if generated else "1"
-    return int(cond + str(position))
+def trigger(code, port):
+    port.write(code.to_bytes(1, 'big'))
+    print('trigger sent {}'.format(code))
 
 def GenerateTrials(path):
     df_order = pd.read_csv(path)
     df = df_order.sample(frac=1).reset_index(drop=True)
     
 
-    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
+    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy", "PitchDif"]:
         df[col] = df[col].apply(safe_literal_eval)
 
     trial_data = []
@@ -80,7 +79,7 @@ def GenerateTrials(path):
 def GeneratePracticeTrials(path):
     df = pd.read_csv(path)
     
-    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
+    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy", "PitchDif"]:
         df[col] = df[col].apply(safe_literal_eval)
 
     trial_data = []
@@ -124,10 +123,11 @@ def safe_literal_eval(x):
     else:
         return x
 
-def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
+def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     path_tones = [tree[0]]
     path_probs = [prob_tree[0]]
     path_entropy = [entropy_tree[0]]
+    path_pitch_dif = [pitch_tree[0]]
     alt_tones = [None]
     alt_probs = [None]
     altpos = -1
@@ -246,7 +246,6 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
-            win.callOnFlip(trigger, EncodingTriggerCode(False, j))
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
             tones[note].play()
@@ -302,11 +301,11 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
     RTs.append(0.0)
 
     parent = 0
+    altpos = -1
 
     for i in range(7):
         child1 = 2 * (parent + 1) - 1
         child2 = 2 * (parent + 1)
-        altpos = -1
         n_confirmed = len(path_tones)
 
         play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
@@ -334,12 +333,13 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = parent - 2**i + 1
+            altpos = (parent - 2**i + 1) // 4
 
         parent = choice
         path_tones.append(tree[choice])
         path_probs.append(prob_tree[choice])
         path_entropy.append(entropy_tree[choice])
+        path_pitch_dif.append(pitch_tree[choice])
         alt_tones.append(tree[alt])
         alt_probs.append(prob_tree[alt])
 
@@ -349,12 +349,13 @@ def MemoryTrial(tree, prob_tree, entropy_tree, altposition):
 
     draw_scene(8, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
     win.color = orig_bg
-    return path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, col, altpos
+    return path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, col, altpos
 
-def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
+def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     path_tones = [tree[0]]
     path_probs = [prob_tree[0]]
     path_entropy = [entropy_tree[0]]
+    path_pitch_dif = [pitch_tree[0]]
     alt_tones = [None]
     alt_probs = [None]
     altpos = -1
@@ -479,7 +480,6 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
-            win.callOnFlip(trigger, EncodingTriggerCode(True, j))
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
             tones[note].play()
@@ -506,7 +506,6 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
     for i in range(7):
         child1 = 2 * (parent + 1) - 1
         child2 = 2 * (parent + 1)
-        altpos = -1
         n_confirmed = len(path_tones)
 
         play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
@@ -531,12 +530,13 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
         RTs.append(clock.getTime())
 
         if i == altposition:
-            altpos = parent - 2**i + 1
+            altpos = (parent - 2**i + 1) // 4
 
         parent = choice
         path_tones.append(tree[choice])
         path_probs.append(prob_tree[choice])
         path_entropy.append(entropy_tree[choice])
+        path_pitch_dif.append(pitch_tree[choice])
         alt_tones.append(tree[alt])
         alt_probs.append(prob_tree[alt])
 
@@ -544,7 +544,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, altposition):
 
     draw_scene(8, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
     win.color = orig_bg
-    return path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, col, altpos
+    return path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, col, altpos
 
 def TestTrial(seq, change, pos, col, generated, surprisal):
     C_PAGE    = [0.867, 0.851, 0.812]
@@ -614,16 +614,15 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
     event.waitKeys()
 
     for i, note in enumerate(seq):
+        draw_test(active_idx=i, show_buttons=False)
         if i == pos - 1 and change:
             code = TestTriggerCode(generated, surprisal, i)
         else:
             code = TestTriggerCode(generated, False, i)
-        win.callOnFlip(trigger, code)
-        draw_test(active_idx=i, show_buttons=False)
+        #trigger(code, port)
         tones[note].play()
         core.wait(duration)
 
-    win.callOnFlip(trigger, 80)
     draw_test(active_idx=-1, show_buttons=True)
     event.clearEvents()
     clock.reset()
@@ -639,7 +638,6 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
             guess = True; response = True  # m = right = Nej, forskellig
 
     rt = clock.getTime()
-    trigger(90)
     win.color = orig_bg
 
     def draw_feedback(correct):
@@ -655,7 +653,7 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         textstim.draw()
         col_cue.draw()
         win.flip()
-        core.wait(1)
+        core.wait(0.3)
 
     draw_feedback((guess==change))
 
@@ -681,11 +679,12 @@ def PracticeTrials(practice_seqs):
             trial = ProductionTrial(
                 tree=seq_data["Sequence"],
                 prob_tree=seq_data["Probabilites"],
+                pitch_tree=seq_data["PitchDif"],
                 entropy_tree=seq_data["Entropy"],
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
+            path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color, altpos = trial
 
             seq = path_tones
             probs = path_probs
@@ -707,11 +706,12 @@ def PracticeTrials(practice_seqs):
             trial = MemoryTrial(
                 tree=seq_data["Sequence"],
                 prob_tree=seq_data["Probabilites"],
+                pitch_tree=seq_data["PitchDif"],
                 entropy_tree=seq_data["Entropy"],
                 altposition=seq_data["Position"]
             )
 
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
+            path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color, altpos = trial
 
             seq = path_tones
             probs = path_probs
@@ -728,17 +728,10 @@ def PracticeTrials(practice_seqs):
             )
 
         else:
-            if seq_data["Generated"]:
-                pos = seq_data["Position"]
-                new_seq = seq.copy()
-                new_seq[pos - 1] = alt_tones[pos]
-            else:
-                new_seq, alt_prob = GenerateNewSeq(
-                    seq.copy(),
-                    seq_data["Position"],
-                    [seq_data["Alternatives"]],
-                    0
-                )
+            pos = seq_data["Position"]
+            new_seq = seq.copy()
+            new_seq[pos - 1] = alt_tones[pos]
+            alt_prob = alt_probs[pos]
 
             guess, rt = TestTrial(
                 new_seq,
@@ -771,9 +764,11 @@ def PracticeTrials(practice_seqs):
 
 
 def GenerateNewSeq(seq, pos, alts, altpos):
+    
     new_seq = seq.copy()
     alt_tone, alt_prob = alts[altpos]
     new_seq[pos-1] = alt_tone
+
     return new_seq, alt_prob
 
 def CollectTrials(trial_seqs, subject_id):
@@ -789,6 +784,7 @@ def CollectTrials(trial_seqs, subject_id):
         "Old_Tone_Surprise": [],
         "New_Tone": [],
         "New_Tone_Surprise": [],
+        "PitchDif": [],
         "Entropy": [],
         "RT": []
     }
@@ -802,6 +798,7 @@ def CollectTrials(trial_seqs, subject_id):
         "Surprise": [],
         "Alternative": [],
         "Alt_Surprise": [],
+        "PitchDif": [],
         "Entropy": [],
         "RT": []
     }
@@ -814,8 +811,8 @@ def CollectTrials(trial_seqs, subject_id):
 
         if seq_data["Generated"]:
             trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
-                                    entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
+                                    entropy_tree=seq_data["Entropy"], pitch_tree=seq_data["PitchDif"], altposition=seq_data["Position"])
+            path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color, altpos = trial
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -826,17 +823,19 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(path_probs[i])
                 trial_data["Alternative"].append(alt_tones[i])
                 trial_data["Alt_Surprise"].append(alt_probs[i])
+                trial_data["PitchDif"].append(path_pitch_dif[i])
                 trial_data["Entropy"].append(path_entropy[i])
                 trial_data["RT"].append(RTs[i])
 
             seq = path_tones
             probs = path_probs
             ents = path_entropy
+            difs = path_pitch_dif
 
         else: #Memorization task
             trial = MemoryTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
-                                    entropy_tree=seq_data["Entropy"], altposition=seq_data["Position"])
-            path_tones, path_probs, path_entropy, alt_tones, alt_probs, RTs, color, _ = trial
+                                    entropy_tree=seq_data["Entropy"], pitch_tree=seq_data["PitchDif"], altposition=seq_data["Position"])
+            path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color, altpos = trial
 
             for i in range(len(path_tones)):
                 trial_data["Trial"].append(trial_num)
@@ -847,12 +846,14 @@ def CollectTrials(trial_seqs, subject_id):
                 trial_data["Surprise"].append(path_probs[i])
                 trial_data["Alternative"].append(alt_tones[i])
                 trial_data["Alt_Surprise"].append(alt_probs[i])
+                trial_data["PitchDif"].append(path_pitch_dif[i])
                 trial_data["Entropy"].append(path_entropy[i])
                 trial_data["RT"].append(RTs[i])
 
             seq = path_tones
             probs = path_probs
             ents = path_entropy
+            difs = path_pitch_dif
 
         if not seq_data["Change"]:
             test = TestTrial(seq, False, -1, color, seq_data["Generated"], seq_data["Surprisal"])
@@ -868,18 +869,16 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Old_Tone_Surprise"].append(None)
             test_data["New_Tone"].append(None)
             test_data["New_Tone_Surprise"].append(None)
+            test_data["PitchDif"].append(None)
             test_data["Entropy"].append(None)
             test_data["RT"].append(rt)
 
 
         else:
-            if seq_data["Generated"]:
-                pos = seq_data["Position"]
-                new_seq = seq.copy()
-                new_seq[pos - 1] = alt_tones[pos]
-                alt_prob = alt_probs[pos]
-            else:
-                new_seq, alt_prob = GenerateNewSeq(seq, seq_data["Position"], [seq_data["Alternatives"]], 0)
+            pos = seq_data["Position"]
+            new_seq = seq.copy()
+            new_seq[pos - 1] = alt_tones[pos]
+            alt_prob = alt_probs[pos]
             test = TestTrial(new_seq, True, seq_data["Position"], color, seq_data["Generated"], seq_data["Surprisal"])
             guess, rt = test
 
@@ -893,6 +892,7 @@ def CollectTrials(trial_seqs, subject_id):
             test_data["Old_Tone_Surprise"].append(probs[seq_data["Position"]-1])
             test_data["New_Tone"].append(new_seq[seq_data["Position"]-1])
             test_data["New_Tone_Surprise"].append(alt_prob)
+            test_data["PitchDif"].append(new_seq[seq_data["Position"]-1] - seq[seq_data["Position"]-1]) #Formentlig det skal ændres her
             test_data["Entropy"].append(ents[seq_data["Position"]-1])
             test_data["RT"].append(rt)
 
@@ -901,34 +901,26 @@ def CollectTrials(trial_seqs, subject_id):
 
     return test_data, trial_data
 
-path = "Sequence/sequences.csv"
+path = "Sequence/sequences_new.csv"
 practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
-practice_seqs = GeneratePracticeTrials(practice_path)
+#practice_seqs = GeneratePracticeTrials(practice_path)
 
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
-win = visual.Window(size=window_size, color = bg_color, units = "pix")
+win = visual.Window(
+    size=window_size, 
+    color = bg_color, 
+    units = "pix",
+    )
 clock = core.Clock()
-try:
-    port = serial.Serial("COM4", 115200)  # Tilpas port-adresse til maskinen
-    port_type = 'serial'
-except:
-    port_type = 'not set'
-
-if port_type == 'serial':
-    def trigger(code):
-        port.write(code.to_bytes(1, 'big'))
-        print('trigger sent {}'.format(code))
-else:
-    def trigger(code):
-        print('[mock] trigger {}'.format(code))
+#port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)  # address for serial port is COM4 in this example. Change to match your machine.
 
 subject_id = getSubjectInfo()
 
 introMessage()
 
-PracticeTrials(practice_seqs)
+#PracticeTrials(practice_seqs)
 
 test_data, trial_data = CollectTrials(trial_seqs, subject_id)
 

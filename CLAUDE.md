@@ -72,15 +72,33 @@ IDyOM-afledt per-tone surprisal er den centrale computationelle variabel.
 - N1 + P200 (encoding, per-tone): Amplitude korrelerer med per-tone IC
 - P300 (encoding): Forstærket kontekstopdatering ved uventede (høj-IC) toner
 
-### Trigger-krav (hvad mangler i eeg.py)
+### Trigger-implementering (i `super_script copy.py`)
 
-| Trigger-type | Tidspunkt | Indhold |
-|---|---|---|
-| Tone-onset (encoding) | Hvert tone-onset under Memorized + Generated | Betingelse (1/2) + tone-nummer (0–7) + IC-niveau |
-| Probe-onset (test) | Når probe-melodien starter | Betingelse (1/2) + same/changed (0/1) + surprisal-condition (0–4) |
-| Response | Tasterespons | Korrekt/forkert |
+Triggers sendes via `serial.Serial("COM4", 115200)` — falder tilbage til mock-print hvis porten ikke er tilgængelig.
 
-Den nuværende `TestTriggerCode` i `eeg.py` dækker delvist probe-onset, men encoding-triggers og response-triggers mangler. `ProductionTrial` i `eeg.py` kalder aldrig `trigger()`.
+**Encoding-triggers** — `EncodingTriggerCode(generated, position)` → 2-cifret kode `[condition][position]`:
+- Condition: `1` = Memorized, `2` = Generated
+- Position: tone-nummer 0–7
+- Sendes via `win.callOnFlip()` i `play_animated()` i både `MemoryTrial` og `ProductionTrial`
+
+**Test-triggers** — `TestTriggerCode(generated, surprisal, position)` → 3-cifret kode `[condition][surprisal_cond][position]`:
+- Surprisal-condition: `0` = ingen change / ikke-changed tone, `1`=(T,T), `2`=(F,F), `3`=(F,T), `4`=(T,F)
+- Sendes per tone-onset under probe-afspilning via `win.callOnFlip()`
+- Hardkodet `80`: decision-onset (response-knapper vises)
+- Hardkodet `90`: response-timestamp (umiddelbart efter tastetryk)
+
+| Trigger-type | Kode | Tidspunkt | Implementeret |
+|---|---|---|---|
+| Tone-onset encoding | `[1/2][0-7]` | `play_animated()` — kun ved afsluttende replay | Ja |
+| Tone-onset test (probe) | `[1/2][0-4][0-7]` | Hvert tone-onset i probe | Ja |
+| Decision-onset | `80` | Når respons-knapper vises | Ja |
+| Response | `90` | Umiddelbart efter tastetryk | Ja |
+
+**Kendte mangler i trigger-implementeringen:**
+- **Ingen IC i encoding-koden**: `EncodingTriggerCode` indkoder kun condition + position — IC-niveau er ikke inkluderet, hvilket begrænser muligheden for at epochere på IC-niveau under encoding uden at merge med CSV-data i post-processing.
+- **Option-toner triggeres ikke**: `play_option()` (A/B-præsentationerne under valg-fasen) sender ingen triggers — N1/P200 til selve beslutningstonerne kan ikke analyseres.
+- **Triggers fyres under practice**: `PracticeTrials()` kalder `ProductionTrial`/`MemoryTrial` som indeholder trigger-kald — forurener EEG-optagelsen med practice-data.
+- **Ingen trial-onset marker**: Ingen trigger markerer starten af en ny trial eller encoding-onset.
 
 ### Fravalgte komponenter
 
@@ -101,7 +119,7 @@ Den nuværende `TestTriggerCode` i `eeg.py` dækker delvist probe-onset, men enc
 ```bash
 source .venv/bin/activate
 cd em3_project
-python super_script copy.py   # Working version — use this
+python main.py   # Working version — use this
 ```
 
 `main.py` + `experiment.py` er i øjeblikket brudt (se Known Issues). Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).
