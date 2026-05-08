@@ -133,12 +133,6 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     altpos = -1
     RTs = []
 
-    tones = {}
-    for note in tree:
-        if note not in tones:
-            freq = ConvertFreq(note)
-            tones[note] = sound.Sound(value=freq, secs=duration, stereo=True, hamming=True)
-
     trial_colors = ["red", "blue", "cyan", "yellow", "pink", "green", "purple"]
     col = random.choice(trial_colors)
 
@@ -350,11 +344,6 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     draw_scene(5, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
     win.color = orig_bg
 
-    for t in tones.values():
-        t.stop()
-        del t
-    tones = {}
-
     return path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, col, altpos
 
 def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
@@ -366,12 +355,6 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     alt_probs = [None]
     altpos = -1
     RTs = []
-
-    tones = {}
-    for note in tree:
-        if note not in tones:
-            freq = ConvertFreq(note)
-            tones[note] = sound.Sound(value=freq, secs=duration, stereo=True, hamming=True)
 
     trial_colors = ["red", "blue", "cyan", "yellow", "pink", "green", "purple"]
     col = random.choice(trial_colors)
@@ -552,11 +535,6 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
     draw_scene(5, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
     win.color = orig_bg
 
-    for t in tones.values():
-        t.stop()
-        del t
-    tones = {}
-
     return path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, col, altpos
 
 def TestTrial(seq, change, pos, col, generated, surprisal):
@@ -565,12 +543,6 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
     C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
     C_BG_SUCC = '#eaf3de'; C_BD_SUCC = '#b6d48e'
     C_TX_PRI  = '#1a1a18'
-
-    tones = {}
-    for note in seq:
-        if note not in tones:
-            freq = ConvertFreq(note)
-            tones[note] = sound.Sound(value=freq, secs=duration, stereo=True, hamming=True)
 
     orig_bg = list(win.color)
     win.color = C_PAGE
@@ -669,11 +641,6 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
         core.wait(0.3)
 
     draw_feedback((guess==change))
-
-    for t in tones.values():
-        t.stop()
-        del t
-    tones = {}
 
     return guess, rt
 
@@ -1048,11 +1015,18 @@ trial_seqs = GenerateTrials(path)
 #practice_seqs = GeneratePracticeTrials(practice_path)
 
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
+
 win = visual.Window(
     size=window_size, 
     color = bg_color, 
     units = "pix",
     )
+
+tones = {}
+for note in range(50, 90):
+    freq = ConvertFreq(note)
+    tones[note] = sound.Sound(value=freq, secs=0.4, stereo=True, hamming=True)
+
 clock = core.Clock()
 #port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)  # address for serial port is COM4 in this example. Change to match your machine.
 
