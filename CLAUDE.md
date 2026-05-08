@@ -119,31 +119,42 @@ Triggers sendes via `serial.Serial("COM4", 115200)` — falder tilbage til mock-
 ```bash
 source .venv/bin/activate
 cd em3_project
-python main.py   # Working version — use this
+python main.py          # Production run (reads sequences_new.csv, prompts for subject ID)
+python main_backup.py   # Headless simulation (SIMULATE = True, reads sequences_test.csv, no audio)
 ```
 
-`main.py` + `experiment.py` er i øjeblikket brudt (se Known Issues). Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).
+Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).
 
 ## Kodearkitektur
 
 ### PsychoPy Experiment (`em3_project/`)
 
-- [super_script copy.py](em3_project/super_script copy.py) — **De-facto entry point**. Selvstændig monolitisk fil: importerer fra modulerne øverst, men **redefinerer alle funktioner lokalt** (de importerede versioner bruges aldrig). Inkluderer forbedret card-baseret UI (tile-animationer, farvekodet A/B-valg), fikset response-logic, og gemmer `data/{subject_id}_trial_data.csv` + `data/{subject_id}_test_data.csv`. **Brug dette.**
-- [super_script.py](em3_project/super_script.py) — Ældre version med simplere UI (farvet firkant som cue). Har stadig `df.loc[0]`-buggen (linje 54) og mangler `Entropy` i `test_data`-kolonnen.
-- [main.py](em3_project/main.py) — Tiltænkt entry point; kalder `Experiment().run()` — **brudt** (ingen Experiment-klasse i experiment.py).
-- [experiment.py](em3_project/experiment.py) — Knap 20 linjer top-level kode uden Experiment-klasse; kører dog partialt (loader sequences, opretter vindue, kører trials). Matcher ikke `main.py`s interface.
-- [settings.py](em3_project/settings.py) — Config-funktioner: `getSettings()` (vindue 1200×800, bg=blue, duration=0.4s, keys=["z","m"]), `getSubjectInfo()`, `getSubjectCharacteristics()`, `checkIfEscape()`. Har dangling kode linje 36-37.
-- [trial.py](em3_project/trial.py) — `ConvertFreq`, `MemoryTrial`, `ProductionTrial`, `TestTrial`. Har response-key logic bug (linje ~108). Afhænger af globale variabler (`win`, `duration`, `clock`).
-- [condition_manager.py](em3_project/condition_manager.py) — `GenerateTrials(path)`: loader sequences.csv og shuffler. **Kritisk bug linje 8**: `df.loc[0]` skal være `df.loc[i]` — genererer samme trial N gange.
-- [data_collecter.py](em3_project/data_collecter.py) — `CollectTrials(trial_seqs)`: orkestrerer trial-flow, kalder Memory/ProductionTrial + TestTrial, returnerer to DataFrames.
-- [participant.py](em3_project/participant.py) — Minimal datamodel (id + gruppe).
-- [block.py](em3_project/block.py) — Tom stub.
+`main.py` er nu **de-facto entry point** — en selvstændig monolitisk fil der indeholder alle funktioner direkte (ingen imports fra de øvrige moduler). Den gamle modulstruktur (trial.py, condition_manager.py, etc.) er dead code.
 
-> `EM3/CLAUDE.md` er en forældet kopi der siger `main.py` er entry point og at trial.py/condition_manager.py er stubs — ignorér den.
+- [main.py](em3_project/main.py) — **Brug dette.** Indeholder: `getSettings()`, `getSubjectInfo()`, `GenerateTrials()`, `MemoryTrial()`, `ProductionTrial()`, `TestTrial()`, `PracticeTrials()`, `GenerateNewSeq()`, `CollectTrials()`. Kører top-level ved import. Gemmer løbende `data/{subject_id}_trial_data.csv` + `data/{subject_id}_test_data.csv` efter hvert trial.
+- [main_backup.py](em3_project/main_backup.py) — Identisk med main.py men med `SIMULATE = True` øverst — springer audio og brugerinput over, auto-responderer randomt. Bruges til at teste flow uden PsychoPy-vindue-interaktion. Læser `sequences_test.csv`.
+- [super_script copy.py](em3_project/super_script copy.py) — Ældre version, nu overhalet af main.py. Beholdt som reference.
+- [super_script.py](em3_project/super_script.py) — Endnu ældre version med simplere UI. Har `df.loc[0]`-buggen — brug ikke.
+- [experiment.py](em3_project/experiment.py), [trial.py](em3_project/trial.py), [condition_manager.py](em3_project/condition_manager.py), [data_collecter.py](em3_project/data_collecter.py), [settings.py](em3_project/settings.py), [participant.py](em3_project/participant.py), [block.py](em3_project/block.py) — Dead code / stubs fra ældre modulær arkitektur. Ignorér dem.
+
+**Nøglefunktioner i main.py:**
+
+- `GenerateTrials(path)` — loader CSV, shuffler med `df.sample(frac=1)`, parser list-kolonner med `safe_literal_eval`
+- `MemoryTrial(tree, ...)` — computeren vælger random A/B, deltager bekræfter med `[space]`; viser "The computer chose X"
+- `ProductionTrial(tree, ...)` — deltager vælger `[z]`=A / `[m]`=B; viser farvekodet A/B-knapper
+- `TestTrial(seq, change, pos, col, generated, surprisal)` — afspiller probe-sekvens, `[z]`=samme / `[m]`=forskellig, giver feedback
+- `GenerateNewSeq(seq, pos, alts, altpos)` — erstatter én tone i sekvensen med alternativet fra `Alternatives`-kolonnen
+- `CollectTrials(trial_seqs, subject_id)` — orkestrerer trial-flow, skriver CSV inkrementelt (ikke kun ved afslutning)
+
+**Binært træ-struktur** (Generated og Memorized begge): `Sequence` er en liste af 15 MIDI-noder (indeks 0–14). Rod = `[0]`. For forælder på indeks `p`: venstre barn = `2*(p+1)-1`, højre barn = `2*(p+1)`. Path består af 8 noder (dybde 0–7).
 
 ### Stimulus-generering (`em3_project/Sequence/`)
 
-- [sequences.ipynb](em3_project/Sequence/sequences.ipynb) — Bygger Markov-model og binære træer til sekventiel stimuluspræsentation. Bruger i øjeblikket POP909-datasættet — skal migreres til LMD+MSD.
+- [sequences.ipynb](em3_project/Sequence/sequences.ipynb) — Bygger Markov-model og binære træer. Bruger stadig POP909-datasættet — skal migreres til LMD+MSD.
+- [sequences_surprisal.ipynb](em3_project/Sequence/sequences_surprisal.ipynb) — Nyere notebook til surprisal-beregning og CSV-generering.
+- `sequences_new.csv` — Produktions-CSV (bruges af main.py).
+- `sequences_test.csv` — Forkortet CSV til hurtig test/simulate (bruges af main_backup.py).
+- `practice_sequences.csv` — Practice trials (PracticeTrials er pt. kommenteret ud i main.py).
 - [Sequence/POP909-Dataset/](em3_project/Sequence/POP909-Dataset/) — Midlertidigt MIDI-korpus (skal erstattes)
 
 ## Tekniske konventioner
@@ -156,34 +167,35 @@ python main.py   # Working version — use this
 
 ## Data-skemaer
 
-**Input til eksperiment:** `Sequence/sequences.csv` (genereret af `sequences.ipynb`)
+**Input til eksperiment:** `Sequence/sequences_new.csv` (genereret af notebooks)
 
 | Kolonne | Type | Beskrivelse |
 |---------|------|-------------|
 | `Generated` | bool | True = 2AFC-betingelse |
 | `Change` | bool | True = probe har ændret tone |
-| `Position` | int | Hvilken tone (0-7) er ændret |
+| `Position` | int | Hvilken tone (1-8) er ændret |
 | `Surprisal` | str (bool-tuple) | IC-betingelse: `(True,False)` = ns→s osv. |
-| `Probe` | int | MIDI-notenummer for probe-tonen |
-| `Sequence` | list[int] | 8 MIDI-noter (lineær rækkefølge for Memorized; binært træ for Generated — 15 noder) |
-| `Probabilites` | list[float] | Surprisal-værdier per tone/node |
-| `Entropy` | list[float] | Entropi per tone/node |
+| `Sequence` | list[int] | 15 MIDI-noder (binært træ, indeks 0–14) |
+| `Probabilites` | list[float] | Surprisal-værdier per node |
+| `Entropy` | list[float] | Entropi per node |
+| `PitchDif` | list[float] | Pitch difference per node (ny kolonne) |
 | `Alternatives` | list[tuple] | `(tone, prob)` alternativ ved change-position |
 
-**Output per deltager** (gemt i `data/`):
-- `{id}_trial_data.csv`: `Trial, Generated, Changed, Position, Tone, Surprise, Alternative, Alt_Surprise, Entropy, RT`
-- `{id}_test_data.csv`: `Trial, Generated, Changed, Guess, Surprise_Cond, Position, Old_Tone, Old_Tone_Surprise, New_Tone, New_Tone_Surprise, Entropy, RT`
+**Output per deltager** (gemt i `data/`, skrives inkrementelt efter hvert trial):
+- `{id}_trial_data.csv`: `Trial, Generated, Changed, Position, Tone, Surprise, Alternative, Alt_Surprise, PitchDif, Entropy, RT`
+- `{id}_test_data.csv`: `Trial, Generated, Changed, Guess, Surprise_Cond, Position, Old_Tone, Old_Tone_Surprise, New_Tone, New_Tone_Surprise, PitchDif, Entropy, RT`
 
 ## Known Issues (aktive bugs)
 
-| Fil | Linje | Problem |
-|-----|-------|---------|
-| `condition_manager.py` | 8 | `df.loc[0]` skal være `df.loc[i]` — alle trials er identiske |
-| `super_script.py` | 54 | Samme `df.loc[0]`-bug som condition_manager.py |
-| `trial.py` | ~108 | `not "z" in keys or "m" in keys` er altid True — response-logic er brudt (fikset i `super_script copy.py`) |
-| `experiment.py` | — | Ingen `Experiment`-klasse; matcher ikke `main.py` |
-| `settings.py` | 36-37 | DataFrame-save uden kontekst — krasjer ved import |
-| `super_script copy.py` + `super_script.py` | CollectTrials | `trial_file`/`test_file` er kun defineret inde i `if seq_data["Generated"]`-blokken — `NameError` hvis første trial er Memorized |
+Bugs i de gamle moduler (trial.py, condition_manager.py, super_script.py, experiment.py) er **ikke relevante** — brug kun main.py.
+
+| Fil | Problem |
+|-----|---------|
+| `main.py` — `MemoryTrial` | Loop kører `range(7)` (7 iterationer) men `range(2,9,1)` i ProductionTrial (7 iterationer). Begge giver 8 toner inkl. rod-tonen — men loop-indeks bruges til altposition-beregning, så formlen kan afvige mellem de to. Verificér. |
+| `main.py` — `altpos`-beregning | Formlen `(parent - 2**i + 1) // 4` i MemoryTrial/ProductionTrial er uverificeret — det er uklart om den korrekt mapper tree-indeks til `Alternatives`-list-indeks. |
+| `main.py` — EEG triggers | `trigger()`-kald er kommenteret ud (`#trigger(code, port)`). Port-variablen er også kommenteret ud. EEG-integration skal genaktiveres manuelt. |
+| `main.py` — `PracticeTrials` | Kaldet er kommenteret ud i top-level kode. |
+| `super_script.py` | `df.loc[0]`-bug (linje 54) — alle trials identiske. Brug ikke. |
 
 ## Vigtige advarsler
 

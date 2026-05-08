@@ -1,0 +1,4 @@
+Trial,Generated,Changed,Guess,Surprise_Cond,Position,Old_Tone,Old_Tone_Surprise,New_Tone,New_Tone_Surprise,PitchDif,Entropy,RT
+0,True,True,False,"(True, True)",7,63,22.70930819498054,59,1.6638616665915258e-06,-4,1.6983042551523249,1.4334035400006542
+1,False,False,False,False,,,,,,,,0.9966614469994965
+2,False,False,False,False,,,,,,,,0.6523784169985447
