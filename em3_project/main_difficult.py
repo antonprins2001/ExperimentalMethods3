@@ -843,7 +843,7 @@ def CollectTrials(trial_seqs, subject_id):
             if not change2:
                 test = TestTrial(seq2, False, -1, color2, gen2, surprisal2)
                 guess, rt = test
-                test_data["Trial"].append(trial_num)
+                test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
                 test_data["Changed"].append(False)
                 test_data["Guess"].append(guess)
@@ -860,7 +860,7 @@ def CollectTrials(trial_seqs, subject_id):
                 new_seq2, alt_prob2 = GenerateNewSeq(seq2, pos2, alts2, altpos2)
                 test = TestTrial(new_seq2, True, pos2, color2, gen2, surprisal2)
                 guess, rt = test
-                test_data["Trial"].append(trial_num)
+                test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
                 test_data["Changed"].append(True)
                 test_data["Guess"].append(guess)
