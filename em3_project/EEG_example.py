@@ -31,10 +31,10 @@ def make_triallist(length, ratio):
     return array
     
 # EEG TRIGGER (simple)
-#def trigger(code)
-#    parallel.setData(code)
-#    core.wait(0.020)
-#    parallel.setData(0)
+def trigger(code)
+    parallel.setData(code)
+    core.wait(0.020)
+    parallel.setData(0)
 
 # EEG TRIGGER (read port)
 try:
