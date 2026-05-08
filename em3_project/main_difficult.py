@@ -6,7 +6,6 @@ import os
 import serial
 import random
 
-# ─── Colour palette (global constants) ───────────────────────────────────────
 C_PAGE    = [0.867, 0.851, 0.812]
 C_CARD    = 'white';   C_BD_CARD = '#dddddd'
 C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
@@ -73,16 +72,35 @@ def trigger(code, port):
 
 def GenerateTrials(path):
     df_order = pd.read_csv(path)
-    df = df_order.sample(frac=1).reset_index(drop=True)
 
     for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy", "PitchDif"]:
-        df[col] = df[col].apply(safe_literal_eval)
+        df_order[col] = df_order[col].apply(safe_literal_eval)
+
+    df_gen = df_order[df_order["Generated"] == True]
+    df_gen_shuf = df_gen.sample(frac=1).reset_index(drop=True)
+
+    df_memo = df_order[df_order["Generated"] == False]
+    df_memo_shuf = df_memo.sample(frac=1).reset_index(drop=True)
 
     trial_data = []
-    for i in range(len(df.index)):
-        trial = df.iloc[i].to_dict()
-        trial["trial"] = i
-        trial_data.append(trial)
+    for i in range(0, len(df_order.index), 2):
+        if i % 4 == 0:
+            trial1 = df_gen_shuf.iloc[i].to_dict()
+            trial2 = df_gen_shuf.iloc[i+1].to_dict()
+            trial1["trial"] = i
+            trial2["trial"] = i + 1
+
+            trial_data.append(trial1)
+            trial_data.append(trial2)
+        else:
+            trial1 = df_memo_shuf.iloc[i].to_dict()
+            trial2 = df_memo_shuf.iloc[i+1].to_dict()
+            trial1["trial"] = i
+            trial2["trial"] = i + 1
+
+            trial_data.append(trial1)
+            trial_data.append(trial2)
+
     return trial_data
 
 def GeneratePracticeTrials(path):
@@ -204,6 +222,29 @@ def introMessage():
     win.flip()
     event.waitKeys()
 
+def genBlockIntro():
+    win.color = C_PAGE
+    V['card'].draw()
+    V['generic_txt'].text = (
+        "This is a production block."
+        "You will produce the next two sequences "
+        "and recall them in order afterward."
+    )
+    V['generic_txt'].draw()
+    win.flip()
+    core.wait(2)
+
+def memoBlockIntro():
+    win.color = C_PAGE
+    V['card'].draw()
+    V['generic_txt'].text = (
+        "This is a memorization block."
+        "The computer will produce the next two sequences "
+        "and you must recall them in order afterwards."
+    )
+    V['generic_txt'].draw()
+    win.flip()
+    core.wait(2)
 
 # ─── MemoryTrial ──────────────────────────────────────────────────────────────
 def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
@@ -728,6 +769,11 @@ def CollectTrials(trial_seqs, subject_id):
         core.wait(1.0)
 
         if trial_num % 2 == 0:
+
+            if trial_num % 4 == 0:
+                genBlockIntro()
+            else:
+                memoBlockIntro()
 
             print(f"Gen: {seq_data['Generated']}. Change: {seq_data['Change']}. Pos: {seq_data['Position']}. Surprisal: {seq_data['Surprisal']}")
             if seq_data["Generated"]:
