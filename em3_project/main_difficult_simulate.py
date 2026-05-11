@@ -335,22 +335,19 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_tri
             draw_scene(n_green=n_confirmed, active_idx=j,
                        opt_header=opt_label, opt_color=opt_color,
                        show_buttons=False)
-            if not SIMULATE:
-                tones[path[j]].play()
-                sim_wait(duration)
+            tones[path[j]].play()
+            core.wait(duration)
         draw_scene(n_green=n_confirmed, active_idx=n_confirmed,
                    opt_header=opt_label, opt_color=opt_color,
                    show_buttons=False)
-        if not SIMULATE:
-            tones[path[n_confirmed]].play()
-            sim_wait(duration)
+        tones[path[n_confirmed]].play()
+        core.wait(duration)
 
     def play_root_tone(note):
         draw_scene(n_green=1, active_idx=0, opt_header='', opt_color=None, show_buttons=False)
-        if not SIMULATE:
-            tones[note].play()
-            sim_wait(duration)
-            sim_wait(1.0)
+        tones[note].play()
+        core.wait(duration)
+        sim_wait(1.0)
         draw_scene(1, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
 
     def play_animated(path, n_confirmed):
@@ -360,9 +357,8 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_tri
                        show_buttons=False)
             if send_triggers:
                 trigger(code, port)
-            if not SIMULATE:
-                tones[note].play()
-                sim_wait(duration)
+            tones[note].play()
+            core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
                    show_buttons=False)
 
@@ -535,22 +531,19 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
             draw_scene(n_green=n_confirmed, active_idx=j,
                        opt_header=opt_label, opt_color=opt_color,
                        show_buttons=False)
-            if not SIMULATE:
-                tones[path[j]].play()
-                sim_wait(duration)
+            tones[path[j]].play()
+            core.wait(duration)
         draw_scene(n_green=n_confirmed, active_idx=n_confirmed,
                    opt_header=opt_label, opt_color=opt_color,
                    show_buttons=False)
-        if not SIMULATE:
-            tones[path[n_confirmed]].play()
-            sim_wait(duration)
+        tones[path[n_confirmed]].play()
+        core.wait(duration)
 
     def play_root_tone(note):
         draw_scene(n_green=1, active_idx=0, opt_header='', opt_color=None, show_buttons=False)
-        if not SIMULATE:
-            tones[note].play()
-            sim_wait(duration)
-            sim_wait(1.0)
+        tones[note].play()
+        core.wait(duration)
+        sim_wait(1.0)
         draw_scene(1, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
 
     def play_animated(path, n_confirmed):
@@ -560,9 +553,8 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
                        show_buttons=False)
             if send_triggers:
                 trigger(code, port)
-            if not SIMULATE:
-                tones[note].play()
-                sim_wait(duration)
+            tones[note].play()
+            core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
                    show_buttons=False)
 
@@ -677,9 +669,8 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, send_triggers
                 else:
                     code = TestTriggerCode(generated, False, i, recent)
                 trigger(code, port)
-        if not SIMULATE:
-            tones[note].play()
-            sim_wait(duration)
+        tones[note].play()
+        core.wait(duration)
 
     if send_triggers:
         win.callOnFlip(trigger, (80, port))
@@ -1012,12 +1003,11 @@ win.mouseVisible = False
 # Build all visual objects once globally
 V = build_visuals()
 
-# Build all sounds once globally (skipped in simulate mode)
+# Build all sounds once globally
 tones = {}
-if not SIMULATE:
-    for note in range(21, 109):
-        freq = ConvertFreq(note)
-        tones[note] = sound.Sound(value=freq, secs=0.4, stereo=True, hamming=True)
+for note in range(21, 109):
+    freq = ConvertFreq(note)
+    tones[note] = sound.Sound(value=freq, secs=0.4, stereo=True, hamming=True)
 
 clock = core.Clock()
 #port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)
