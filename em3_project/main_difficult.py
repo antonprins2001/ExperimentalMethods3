@@ -71,6 +71,14 @@ def TestTriggerCode(generated, surprisal, position, recent):
     code = cond + surp + pos
     return(int(code))
 
+def EncodingTriggerCode(generated, position):
+    """Encoding tone-onset trigger: [condition][position].
+    condition: 1=memorized, 2=generated. position is 0-indexed.
+    """
+    cond = "2" if generated else "1"
+    return int(cond + str(position))
+
+
 def trigger(code, port):
     port.write(code.to_bytes(1, 'big'))
     print('trigger sent {}'.format(code))
@@ -254,7 +262,7 @@ def memoBlockIntro():
     core.wait(2)
 
 # ─── MemoryTrial ──────────────────────────────────────────────────────────────
-def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
+def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_triggers):
     path_tones     = [tree[0]]
     path_probs     = [prob_tree[0]]
     path_entropy   = [entropy_tree[0]]
@@ -340,8 +348,11 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
+            code = EncodingTriggerCode(False, j)
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
+            if send_triggers:
+                trigger(code, port)
             tones[note].play()
             core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
@@ -442,7 +453,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
 
 # ─── ProductionTrial ──────────────────────────────────────────────────────────
-def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
+def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_triggers):
     path_tones     = [tree[0]]
     path_probs     = [prob_tree[0]]
     path_entropy   = [entropy_tree[0]]
@@ -537,8 +548,11 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
+            code = EncodingTriggerCode(False, j)
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
+            if send_triggers:
+                trigger(code, port)
             tones[note].play()
             core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
@@ -601,7 +615,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
 
 # ─── TestTrial ────────────────────────────────────────────────────────────────
-def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = False):
+def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = False, send_triggers):
     win.color = C_PAGE
     V['col_cue'].fillColor = col
 
@@ -642,11 +656,12 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = Fa
     for i, note in enumerate(seq):
         draw_test(active_idx=i, show_buttons=False)
         if not practice:
-            if i == pos - 1 and change:
-                code = TestTriggerCode(generated, surprisal, i, recent)
-            else:
-                code = TestTriggerCode(generated, False, i, recent)
-            #trigger(code, port)
+            if send_triggers:
+                if i == pos - 1 and change:
+                    code = TestTriggerCode(generated, surprisal, i, recent)
+                else:
+                    code = TestTriggerCode(generated, False, i, recent)
+                trigger(code, port)
         tones[note].play()
         core.wait(duration)
 
@@ -665,6 +680,8 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = Fa
             guess = True; response = True
         core.wait(0.001)
 
+    if send_triggers:
+        trigger(90, port)
     rt = clock.getTime()
 
     def draw_feedback(correct):
