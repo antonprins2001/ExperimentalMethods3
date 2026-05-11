@@ -97,7 +97,7 @@ def setup_eeg_trigger(port_name="COM4", baudrate=115200):
         return send_trigger, None
 
 
-def trigger(code):
+def trigger(code): #Overvej om denne skal implementeres som en closure inde i setup_eeg_trigger() for at undgå at have en global mock trigger funktion
     """Temporary trigger function; overwritten in main by setup_eeg_trigger()."""
     print(f"[mock] trigger {code}")
 
