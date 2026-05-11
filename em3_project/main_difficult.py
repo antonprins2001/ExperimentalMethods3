@@ -903,7 +903,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
                 test_data["Changed"].append(True)
                 test_data["Guess"].append(guess)
                 test_data["Surprise_Cond"].append(surprisal1)
-                test_data["Position"].append(False)
+                test_data["Position"].append(pos1)
                 test_data["Recent"].append(False)
                 test_data["Old_Tone"].append(seq1[pos1-1])
                 test_data["Old_Tone_Surprise"].append(probs1[pos1-1])
