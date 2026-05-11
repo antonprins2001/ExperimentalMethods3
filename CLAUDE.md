@@ -72,33 +72,34 @@ IDyOM-afledt per-tone surprisal er den centrale computationelle variabel.
 - N1 + P200 (encoding, per-tone): Amplitude korrelerer med per-tone IC
 - P300 (encoding): Forstærket kontekstopdatering ved uventede (høj-IC) toner
 
-### Trigger-implementering (i `super_script copy.py`)
+### Trigger-implementering (i `main_difficult_with_triggers.py`)
 
-Triggers sendes via `serial.Serial("COM4", 115200)` — falder tilbage til mock-print hvis porten ikke er tilgængelig.
+Port: `serial.Serial("/dev/tty.usbserial-DN2Q03LO", 115200)` via `setup_eeg_trigger()` — falder automatisk tilbage til mock-print hvis porten ikke er tilgængelig. Practice-trials bruger `send_triggers=False` og forurener ikke optagelsen.
 
 **Encoding-triggers** — `EncodingTriggerCode(generated, position)` → 2-cifret kode `[condition][position]`:
 - Condition: `1` = Memorized, `2` = Generated
-- Position: tone-nummer 0–7
-- Sendes via `win.callOnFlip()` i `play_animated()` i både `MemoryTrial` og `ProductionTrial`
+- Position: tone-nummer 0–4 (5-tone melodi)
+- Sendes via `win.callOnFlip()` i `play_animated()` — kun ved afsluttende replay, ikke under A/B-præsentation
 
 **Test-triggers** — `TestTriggerCode(generated, surprisal, position)` → 3-cifret kode `[condition][surprisal_cond][position]`:
-- Surprisal-condition: `0` = ingen change / ikke-changed tone, `1`=(T,T), `2`=(F,F), `3`=(F,T), `4`=(T,F)
+- Surprisal-condition: `0` = ikke-changed tone, `1`=(T,T), `2`=(F,F), `3`=(F,T), `4`=(T,F)
 - Sendes per tone-onset under probe-afspilning via `win.callOnFlip()`
-- Hardkodet `80`: decision-onset (response-knapper vises)
-- Hardkodet `90`: response-timestamp (umiddelbart efter tastetryk)
+- `80`: decision-onset (response-knapper vises) via `win.callOnFlip()`
+- `90`: response-timestamp — sendes direkte (ikke via callOnFlip) umiddelbart efter tastetryk
 
-| Trigger-type | Kode | Tidspunkt | Implementeret |
+| Trigger-type | Kode | Eksempel | Tidspunkt |
 |---|---|---|---|
-| Tone-onset encoding | `[1/2][0-7]` | `play_animated()` — kun ved afsluttende replay | Ja |
-| Tone-onset test (probe) | `[1/2][0-4][0-7]` | Hvert tone-onset i probe | Ja |
-| Decision-onset | `80` | Når respons-knapper vises | Ja |
-| Response | `90` | Umiddelbart efter tastetryk | Ja |
+| Tone-onset encoding (Memorized) | `1[0-4]` | `10`–`14` | `play_animated()` replay |
+| Tone-onset encoding (Generated) | `2[0-4]` | `20`–`24` | `play_animated()` replay |
+| Tone-onset test — ikke-changed | `[1/2]0[0-4]` | `100`–`104` | Per tone i probe |
+| Tone-onset test — changed tone | `[1/2][1-4][0-4]` | `214` | Kun ved ændret position |
+| Decision-onset | `80` | `80` | Når respons-knapper vises |
+| Response | `90` | `90` | Umiddelbart efter tastetryk |
 
-**Kendte mangler i trigger-implementeringen:**
-- **Ingen IC i encoding-koden**: `EncodingTriggerCode` indkoder kun condition + position — IC-niveau er ikke inkluderet, hvilket begrænser muligheden for at epochere på IC-niveau under encoding uden at merge med CSV-data i post-processing.
-- **Option-toner triggeres ikke**: `play_option()` (A/B-præsentationerne under valg-fasen) sender ingen triggers — N1/P200 til selve beslutningstonerne kan ikke analyseres.
-- **Triggers fyres under practice**: `PracticeTrials()` kalder `ProductionTrial`/`MemoryTrial` som indeholder trigger-kald — forurener EEG-optagelsen med practice-data.
-- **Ingen trial-onset marker**: Ingen trigger markerer starten af en ny trial eller encoding-onset.
+**Kendte mangler:**
+- **Ingen IC i encoding-koden**: `EncodingTriggerCode` indkoder kun condition + position — IC-niveau kan ikke epocheres direkte uden merge med CSV i post-processing.
+- **Option-toner triggeres ikke**: `play_option()` under valg-fasen sender ingen triggers — N1/P200 til beslutningstonerne kan ikke analyseres.
+- **Ingen trial-onset marker**: Ingen trigger markerer starten af en ny trial.
 
 ### Fravalgte komponenter
 
@@ -118,35 +119,32 @@ Triggers sendes via `serial.Serial("COM4", 115200)` — falder tilbage til mock-
 
 ```bash
 source .venv/bin/activate
-cd em3_project
-python main.py          # Production run (reads sequences_new.csv, prompts for subject ID)
-python main_backup.py   # Headless simulation (SIMULATE = True, reads sequences_test.csv, no audio)
+python main_difficult_with_triggers.py   # Primær eksperimentfil med EEG-triggers
 ```
 
 Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).
 
 ## Kodearkitektur
 
-### PsychoPy Experiment (`em3_project/`)
+### PsychoPy Experiment (rod-mappen)
 
-`main.py` er nu **de-facto entry point** — en selvstændig monolitisk fil der indeholder alle funktioner direkte (ingen imports fra de øvrige moduler). Den gamle modulstruktur (trial.py, condition_manager.py, etc.) er dead code.
+`main_difficult_with_triggers.py` er **de-facto entry point** — selvstændig monolitisk fil med alle funktioner og fuldt EEG-trigger-setup.
 
-- [main.py](em3_project/main.py) — **Brug dette.** Indeholder: `getSettings()`, `getSubjectInfo()`, `GenerateTrials()`, `MemoryTrial()`, `ProductionTrial()`, `TestTrial()`, `PracticeTrials()`, `GenerateNewSeq()`, `CollectTrials()`. Kører top-level ved import. Gemmer løbende `data/{subject_id}_trial_data.csv` + `data/{subject_id}_test_data.csv` efter hvert trial.
-- [main_backup.py](em3_project/main_backup.py) — Identisk med main.py men med `SIMULATE = True` øverst — springer audio og brugerinput over, auto-responderer randomt. Bruges til at teste flow uden PsychoPy-vindue-interaktion. Læser `sequences_test.csv`.
-- [super_script copy.py](em3_project/super_script copy.py) — Ældre version, nu overhalet af main.py. Beholdt som reference.
-- [super_script.py](em3_project/super_script.py) — Endnu ældre version med simplere UI. Har `df.loc[0]`-buggen — brug ikke.
-- [experiment.py](em3_project/experiment.py), [trial.py](em3_project/trial.py), [condition_manager.py](em3_project/condition_manager.py), [data_collecter.py](em3_project/data_collecter.py), [settings.py](em3_project/settings.py), [participant.py](em3_project/participant.py), [block.py](em3_project/block.py) — Dead code / stubs fra ældre modulær arkitektur. Ignorér dem.
+- [main_difficult_with_triggers.py](main_difficult_with_triggers.py) — **Brug dette.** 5-tone melodier, 4 binære valg. Indeholder: `setup_eeg_trigger()`, `EncodingTriggerCode()`, `TestTriggerCode()`, `build_visuals()`, `MemoryTrial()`, `ProductionTrial()`, `TestTrial()`, `PracticeTrials()`, `GenerateNewSeq()`, `CollectTrials()`. Læser `Sequence/sequences_dif.csv`. Gemmer `data/{subject_id}_trial_data.csv` + `data/{subject_id}_test_data.csv` løbende.
+- [main_difficult.py](main_difficult.py) — Samme som ovenstående uden EEG-triggers (reference/backup).
+- [em3_project/super_script copy.py](em3_project/super_script copy.py) — Ældre 8-tone version. Beholdt som reference.
+- [em3_project/super_script.py](em3_project/super_script.py) — Endnu ældre version. Har `df.loc[0]`-buggen — brug ikke.
+- Øvrige filer i `em3_project/` (`main.py`, `experiment.py`, `trial.py`, osv.) — dead code fra ældre arkitektur. Ignorér dem.
 
-**Nøglefunktioner i main.py:**
+**Nøglefunktioner i main_difficult_with_triggers.py:**
 
-- `GenerateTrials(path)` — loader CSV, shuffler med `df.sample(frac=1)`, parser list-kolonner med `safe_literal_eval`
-- `MemoryTrial(tree, ...)` — computeren vælger random A/B, deltager bekræfter med `[space]`; viser "The computer chose X"
-- `ProductionTrial(tree, ...)` — deltager vælger `[z]`=A / `[m]`=B; viser farvekodet A/B-knapper
-- `TestTrial(seq, change, pos, col, generated, surprisal)` — afspiller probe-sekvens, `[z]`=samme / `[m]`=forskellig, giver feedback
-- `GenerateNewSeq(seq, pos, alts, altpos)` — erstatter én tone i sekvensen med alternativet fra `Alternatives`-kolonnen
-- `CollectTrials(trial_seqs, subject_id)` — orkestrerer trial-flow, skriver CSV inkrementelt (ikke kun ved afslutning)
+- `setup_eeg_trigger(port, baud)` — returnerer `(trigger_fn, port_obj)`; falder back til mock hvis porten fejler
+- `MemoryTrial(tree, ..., send_triggers=True)` — computeren vælger random A/B, deltager trykker `[space]`
+- `ProductionTrial(tree, ..., send_triggers=True)` — deltager vælger `[z]`=A / `[m]`=B
+- `TestTrial(seq, change, pos, col, generated, surprisal, send_triggers=True)` — probe-afspilning + change-detection respons
+- `CollectTrials(trial_seqs, subject_id)` — trial-par-logik (even=encoding, odd=encoding+test×2)
 
-**Binært træ-struktur** (Generated og Memorized begge): `Sequence` er en liste af 15 MIDI-noder (indeks 0–14). Rod = `[0]`. For forælder på indeks `p`: venstre barn = `2*(p+1)-1`, højre barn = `2*(p+1)`. Path består af 8 noder (dybde 0–7).
+**Binært træ-struktur**: `Sequence` er en liste af MIDI-noder. Rod = `[0]`. For forælder `p`: venstre barn = `2*(p+1)-1`, højre barn = `2*(p+1)`. Loop kører `range(2, 6)` → 4 valg → 5-tone path.
 
 ### Stimulus-generering (`em3_project/Sequence/`)
 
