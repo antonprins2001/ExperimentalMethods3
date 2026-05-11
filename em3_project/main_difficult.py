@@ -71,6 +71,14 @@ def TestTriggerCode(generated, surprisal, position, recent):
     code = cond + surp + pos
     return(int(code))
 
+def EncodingTriggerCode(generated, position):
+    """Encoding tone-onset trigger: [condition][position].
+    condition: 1=memorized, 2=generated. position is 0-indexed.
+    """
+    cond = "2" if generated else "1"
+    return int(cond + str(position))
+
+
 def trigger(code, port):
     port.write(code.to_bytes(1, 'big'))
     print('trigger sent {}'.format(code))
@@ -254,7 +262,7 @@ def memoBlockIntro():
     core.wait(2)
 
 # ─── MemoryTrial ──────────────────────────────────────────────────────────────
-def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
+def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_triggers):
     path_tones     = [tree[0]]
     path_probs     = [prob_tree[0]]
     path_entropy   = [entropy_tree[0]]
@@ -340,8 +348,11 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
+            code = EncodingTriggerCode(False, j)
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
+            if send_triggers:
+                trigger(code, port)
             tones[note].play()
             core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
@@ -442,7 +453,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
 
 # ─── ProductionTrial ──────────────────────────────────────────────────────────
-def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
+def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_triggers):
     path_tones     = [tree[0]]
     path_probs     = [prob_tree[0]]
     path_entropy   = [entropy_tree[0]]
@@ -537,8 +548,11 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
     def play_animated(path, n_confirmed):
         for j, note in enumerate(path):
+            code = EncodingTriggerCode(False, j)
             draw_scene(n_green=n_confirmed, active_idx=j, opt_header='', opt_color=None,
                        show_buttons=False)
+            if send_triggers:
+                trigger(code, port)
             tones[note].play()
             core.wait(duration)
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None,
@@ -601,7 +615,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
 
 # ─── TestTrial ────────────────────────────────────────────────────────────────
-def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = False):
+def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = False, send_triggers):
     win.color = C_PAGE
     V['col_cue'].fillColor = col
 
@@ -642,14 +656,17 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = Fa
     for i, note in enumerate(seq):
         draw_test(active_idx=i, show_buttons=False)
         if not practice:
-            if i == pos - 1 and change:
-                code = TestTriggerCode(generated, surprisal, i, recent)
-            else:
-                code = TestTriggerCode(generated, False, i, recent)
-            #trigger(code, port)
+            if send_triggers:
+                if i == pos - 1 and change:
+                    code = TestTriggerCode(generated, surprisal, i, recent)
+                else:
+                    code = TestTriggerCode(generated, False, i, recent)
+                trigger(code, port)
         tones[note].play()
         core.wait(duration)
 
+    if send_triggers:
+        win.callOnFlip(trigger, (80, port))
     draw_test(active_idx=-1, show_buttons=True)
     event.clearEvents()
     clock.reset()
@@ -665,6 +682,8 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = Fa
             guess = True; response = True
         core.wait(0.001)
 
+    if send_triggers:
+        trigger(90, port)
     rt = clock.getTime()
 
     def draw_feedback(correct):
@@ -699,7 +718,8 @@ def PracticeTrials(practice_seqs):
                 prob_tree=seq_data["Probabilites"],
                 pitch_tree=seq_data["PitchDif"],
                 entropy_tree=seq_data["Entropy"],
-                altposition=seq_data["Position"]
+                altposition=seq_data["Position"],
+                send_triggers = False
             )
         else:
             generic_txt.text = "Practice trial\n\nThis is a memory trial.\n\nPress any key to start."
@@ -712,7 +732,8 @@ def PracticeTrials(practice_seqs):
                 prob_tree=seq_data["Probabilites"],
                 pitch_tree=seq_data["PitchDif"],
                 entropy_tree=seq_data["Entropy"],
-                altposition=seq_data["Position"]
+                altposition=seq_data["Position"],
+                send_triggers = False
             )
 
         path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color, altpos = trial
@@ -720,7 +741,7 @@ def PracticeTrials(practice_seqs):
 
         if not seq_data["Change"]:
             guess, rt = TestTrial(seq, False, -1, color,
-                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True)
+                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True, send_triggers=False)
         else:
             if seq_data["Generated"]:
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
@@ -729,7 +750,7 @@ def PracticeTrials(practice_seqs):
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
                                                    [seq_data["Alternatives"]], 0)
             guess, rt = TestTrial(new_seq, True, seq_data["Position"], color,
-                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True)
+                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True, send_triggers=False)
 
         generic_txt.text = "Practice trial finished.\n\nPress any key to continue."
         generic_txt.draw()
@@ -750,7 +771,7 @@ def GenerateNewSeq(seq, pos, alts, altpos):
 
 
 # ─── CollectTrials ────────────────────────────────────────────────────────────
-def CollectTrials(trial_seqs, subject_id):
+def CollectTrials(trial_seqs, subject_id, triggers):
 
     test_data = {
         "Trial": [], "Generated": [], "Changed": [], "Guess": [],
@@ -787,11 +808,11 @@ def CollectTrials(trial_seqs, subject_id):
             if seq_data["Generated"]:
                 trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                         entropy_tree=seq_data["Entropy"], pitch_tree=seq_data["PitchDif"],
-                                        altposition=seq_data["Position"])
+                                        altposition=seq_data["Position"], send_triggers = triggers)
             else:
                 trial = MemoryTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                     entropy_tree=seq_data["Entropy"], pitch_tree=seq_data["PitchDif"],
-                                    altposition=seq_data["Position"])
+                                    altposition=seq_data["Position"], send_triggers = triggers)
 
             path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color1, altpos1 = trial
 
@@ -827,11 +848,11 @@ def CollectTrials(trial_seqs, subject_id):
             if seq_data["Generated"]:
                 trial = ProductionTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                         entropy_tree=seq_data["Entropy"], pitch_tree=seq_data["PitchDif"],
-                                        altposition=seq_data["Position"])
+                                        altposition=seq_data["Position"], send_triggers = triggers)
             else:
                 trial = MemoryTrial(tree=seq_data["Sequence"], prob_tree=seq_data["Probabilites"],
                                     entropy_tree=seq_data["Entropy"], pitch_tree=seq_data["PitchDif"],
-                                    altposition=seq_data["Position"])
+                                    altposition=seq_data["Position"], send_triggers = triggers)
 
             path_tones, path_probs, path_entropy, path_pitch_dif, alt_tones, alt_probs, RTs, color2, altpos2 = trial
 
@@ -863,7 +884,7 @@ def CollectTrials(trial_seqs, subject_id):
 
             # Test trial 1
             if not change1:
-                test = TestTrial(seq1, False, -1, color1, gen1, surprisal1, False)
+                test = TestTrial(seq1, False, -1, color1, gen1, surprisal1, False, send_triggers = triggers)
                 guess, rt = test
                 test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen1)
@@ -881,7 +902,7 @@ def CollectTrials(trial_seqs, subject_id):
                 test_data["RT"].append(rt)
             else:
                 new_seq1, alt_prob1 = GenerateNewSeq(seq1, pos1, alts1, altpos1)
-                test = TestTrial(new_seq1, True, pos1, color1, gen1, surprisal1, False)
+                test = TestTrial(new_seq1, True, pos1, color1, gen1, surprisal1, False, send_triggers = triggers)
                 guess, rt = test
                 test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen1)
@@ -903,7 +924,7 @@ def CollectTrials(trial_seqs, subject_id):
 
             # Test trial 2
             if not change2:
-                test = TestTrial(seq2, False, -1, color2, gen2, surprisal2, True)
+                test = TestTrial(seq2, False, -1, color2, gen2, surprisal2, True, send_triggers = triggers)
                 guess, rt = test
                 test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
@@ -921,7 +942,7 @@ def CollectTrials(trial_seqs, subject_id):
                 test_data["RT"].append(rt)
             else:
                 new_seq2, alt_prob2 = GenerateNewSeq(seq2, pos2, alts2, altpos2)
-                test = TestTrial(new_seq2, True, pos2, color2, gen2, surprisal2, True)
+                test = TestTrial(new_seq2, True, pos2, color2, gen2, surprisal2, True, send_triggers = triggers)
                 guess, rt = test
                 test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
@@ -982,7 +1003,7 @@ introMessage()
 
 PracticeTrials(practice_seqs)
 
-test_data, trial_data = CollectTrials(trial_seqs, subject_id)
+test_data, trial_data = CollectTrials(trial_seqs, subject_id, False)
 
 #port.close()
 
