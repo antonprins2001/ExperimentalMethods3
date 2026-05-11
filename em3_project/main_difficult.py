@@ -985,7 +985,7 @@ V = build_visuals()
 
 # Build all sounds once globally
 tones = {}
-for note in range(50, 90):
+for note in range(21, 109):
     freq = ConvertFreq(note)
     tones[note] = sound.Sound(value=freq, secs=0.4, stereo=True, hamming=True)
 
