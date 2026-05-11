@@ -97,24 +97,21 @@ def GenerateTrials(path):
 
     trial_data = []
 
-    for i in range(0, min(len(df_gen_shuf.index), len(df_memo_shuf.index))-1, 1):
-        if i % 2 == 0:
+    for i in range(0, min(len(df_gen_shuf.index), len(df_memo_shuf.index)) - 1, 2):
+        trial1 = df_gen_shuf.iloc[i].to_dict()
+        trial2 = df_gen_shuf.iloc[i+1].to_dict()
+        trial1["trial"] = i*2
+        trial2["trial"] = i*2 + 1
+        trial_data.append(trial1)
+        trial_data.append(trial2)
 
-            trial1 = df_gen_shuf.iloc[i].to_dict()
-            trial2 = df_gen_shuf.iloc[i+1].to_dict()
-            trial1["trial"] = i*2
-            trial2["trial"] = i*2 + 1
+        trial3 = df_memo_shuf.iloc[i].to_dict()
+        trial4 = df_memo_shuf.iloc[i+1].to_dict()
+        trial3["trial"] = (i+1)*2
+        trial4["trial"] = (i+1)*2 + 1
 
-            trial_data.append(trial1)
-            trial_data.append(trial2)
-        else:
-            trial1 = df_memo_shuf.iloc[i].to_dict()
-            trial2 = df_memo_shuf.iloc[i+1].to_dict()
-            trial1["trial"] = i*2
-            trial2["trial"] = i*2 + 1
-
-            trial_data.append(trial1)
-            trial_data.append(trial2)
+        trial_data.append(trial3)
+        trial_data.append(trial4)
 
     return trial_data
 
@@ -985,7 +982,7 @@ V = build_visuals()
 
 # Build all sounds once globally
 tones = {}
-for note in range(21, 109):
+for note in range(30, 109):
     freq = ConvertFreq(note)
     tones[note] = sound.Sound(value=freq, secs=0.4, stereo=True, hamming=True)
 
