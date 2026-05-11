@@ -972,6 +972,8 @@ practice_path = 'Sequence/practice_sequences_dif.csv'
 trial_seqs = GenerateTrials(path)
 #practice_seqs = GeneratePracticeTrials(practice_path)
 
+print("Starting Exp")
+
 subject_id = getSubjectInfo()
 
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
