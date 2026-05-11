@@ -72,7 +72,7 @@ IDyOM-afledt per-tone surprisal er den centrale computationelle variabel.
 - N1 + P200 (encoding, per-tone): Amplitude korrelerer med per-tone IC
 - P300 (encoding): Forstærket kontekstopdatering ved uventede (høj-IC) toner
 
-### Trigger-implementering (i `main_difficult_with_triggers.py`)
+### Trigger-implementering (i `main_difficult.py`)
 
 Port: `serial.Serial("/dev/tty.usbserial-DN2Q03LO", 115200)` via `setup_eeg_trigger()` — falder automatisk tilbage til mock-print hvis porten ikke er tilgængelig. Practice-trials bruger `send_triggers=False` og forurener ikke optagelsen.
 
@@ -119,7 +119,7 @@ Port: `serial.Serial("/dev/tty.usbserial-DN2Q03LO", 115200)` via `setup_eeg_trig
 
 ```bash
 source .venv/bin/activate
-python main_difficult_with_triggers.py   # Primær eksperimentfil med EEG-triggers
+python main_difficult.py   # Primær eksperimentfil med EEG-triggers
 ```
 
 Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afhængigheder installeret direkte i `.venv/`: `psychopy`, `pandas`, `numpy`, `mido` (+ `pretty_midi` til fremtidig pipeline).
@@ -128,7 +128,7 @@ Virtual environment: `.venv/` (Python 3.12.3). Ingen `requirements.txt` — afh�
 
 ### PsychoPy Experiment (rod-mappen)
 
-`main_difficult_with_triggers.py` er **de-facto entry point** — selvstændig monolitisk fil med alle funktioner og fuldt EEG-trigger-setup.
+`main_difficult.py` er **de-facto entry point** — selvstændig monolitisk fil med alle funktioner og fuldt EEG-trigger-setup.
 
 - [main_difficult_with_triggers.py](main_difficult_with_triggers.py) — **Brug dette.** 5-tone melodier, 4 binære valg. Indeholder: `setup_eeg_trigger()`, `EncodingTriggerCode()`, `TestTriggerCode()`, `build_visuals()`, `MemoryTrial()`, `ProductionTrial()`, `TestTrial()`, `PracticeTrials()`, `GenerateNewSeq()`, `CollectTrials()`. Læser `Sequence/sequences_dif.csv`. Gemmer `data/{subject_id}_trial_data.csv` + `data/{subject_id}_test_data.csv` løbende.
 - [main_difficult.py](main_difficult.py) — Samme som ovenstående uden EEG-triggers (reference/backup).
