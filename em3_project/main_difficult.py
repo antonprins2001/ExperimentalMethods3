@@ -83,20 +83,22 @@ def GenerateTrials(path):
     df_memo_shuf = df_memo.sample(frac=1).reset_index(drop=True)
 
     trial_data = []
-    for i in range(0, len(df_order.index), 2):
-        if i % 4 == 0:
+
+    for i in range(0, min(len(df_gen_shuf.index), len(df_memo_shuf.index))-1, 1):
+        if i % 2 == 0:
+
             trial1 = df_gen_shuf.iloc[i].to_dict()
             trial2 = df_gen_shuf.iloc[i+1].to_dict()
-            trial1["trial"] = i
-            trial2["trial"] = i + 1
+            trial1["trial"] = i*2
+            trial2["trial"] = i*2 + 1
 
             trial_data.append(trial1)
             trial_data.append(trial2)
         else:
             trial1 = df_memo_shuf.iloc[i].to_dict()
             trial2 = df_memo_shuf.iloc[i+1].to_dict()
-            trial1["trial"] = i
-            trial2["trial"] = i + 1
+            trial1["trial"] = i*2
+            trial2["trial"] = i*2 + 1
 
             trial_data.append(trial1)
             trial_data.append(trial2)
