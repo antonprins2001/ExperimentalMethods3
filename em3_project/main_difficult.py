@@ -46,7 +46,7 @@ def checkIfEscape():
     if 'escape' in keys:
         core.quit()
 
-def TestTriggerCode(generated, surprisal, position):
+def TestTriggerCode(generated, surprisal, position, recent):
     if generated:
         cond = "2"
     else:
@@ -62,7 +62,12 @@ def TestTriggerCode(generated, surprisal, position):
             surp = "3"
         elif surprisal == (True, False):
             surp = "4"
-    pos = str(position)
+    if recent:
+        pos = str(
+            position + 5
+        )
+    else:
+        pos = str(position)
     code = cond + surp + pos
     return(int(code))
 
@@ -596,7 +601,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition):
 
 
 # ─── TestTrial ────────────────────────────────────────────────────────────────
-def TestTrial(seq, change, pos, col, generated, surprisal):
+def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = False):
     win.color = C_PAGE
     V['col_cue'].fillColor = col
 
@@ -636,11 +641,12 @@ def TestTrial(seq, change, pos, col, generated, surprisal):
 
     for i, note in enumerate(seq):
         draw_test(active_idx=i, show_buttons=False)
-        if i == pos - 1 and change:
-            code = TestTriggerCode(generated, surprisal, i)
-        else:
-            code = TestTriggerCode(generated, False, i)
-        #trigger(code, port)
+        if not practice:
+            if i == pos - 1 and change:
+                code = TestTriggerCode(generated, surprisal, i, recent)
+            else:
+                code = TestTriggerCode(generated, False, i, recent)
+            #trigger(code, port)
         tones[note].play()
         core.wait(duration)
 
@@ -714,7 +720,7 @@ def PracticeTrials(practice_seqs):
 
         if not seq_data["Change"]:
             guess, rt = TestTrial(seq, False, -1, color,
-                                  seq_data["Generated"], seq_data["Surprisal"])
+                                  seq_data["Generated"], seq_data["Surprisal"], False)
         else:
             if seq_data["Generated"]:
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
@@ -723,7 +729,7 @@ def PracticeTrials(practice_seqs):
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
                                                    [seq_data["Alternatives"]], 0)
             guess, rt = TestTrial(new_seq, True, seq_data["Position"], color,
-                                  seq_data["Generated"], seq_data["Surprisal"])
+                                  seq_data["Generated"], seq_data["Surprisal"], False)
 
         generic_txt.text = "Practice trial finished.\n\nPress any key to continue."
         generic_txt.draw()
@@ -748,7 +754,7 @@ def CollectTrials(trial_seqs, subject_id):
 
     test_data = {
         "Trial": [], "Generated": [], "Changed": [], "Guess": [],
-        "Surprise_Cond": [], "Position": [], "Old_Tone": [],
+        "Surprise_Cond": [], "Position": [], "Recent": [],"Old_Tone": [],
         "Old_Tone_Surprise": [], "New_Tone": [], "New_Tone_Surprise": [],
         "PitchDif": [], "Entropy": [], "RT": []
     }
@@ -857,7 +863,7 @@ def CollectTrials(trial_seqs, subject_id):
 
             # Test trial 1
             if not change1:
-                test = TestTrial(seq1, False, -1, color1, gen1, surprisal1)
+                test = TestTrial(seq1, False, -1, color1, gen1, surprisal1, False)
                 guess, rt = test
                 test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen1)
@@ -865,6 +871,7 @@ def CollectTrials(trial_seqs, subject_id):
                 test_data["Guess"].append(guess)
                 test_data["Surprise_Cond"].append(surprisal1)
                 test_data["Position"].append(None)
+                test_data["Recent"].append(False)
                 test_data["Old_Tone"].append(None)
                 test_data["Old_Tone_Surprise"].append(None)
                 test_data["New_Tone"].append(None)
@@ -874,14 +881,15 @@ def CollectTrials(trial_seqs, subject_id):
                 test_data["RT"].append(rt)
             else:
                 new_seq1, alt_prob1 = GenerateNewSeq(seq1, pos1, alts1, altpos1)
-                test = TestTrial(new_seq1, True, pos1, color1, gen1, surprisal1)
+                test = TestTrial(new_seq1, True, pos1, color1, gen1, surprisal1, False)
                 guess, rt = test
                 test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen1)
                 test_data["Changed"].append(True)
                 test_data["Guess"].append(guess)
                 test_data["Surprise_Cond"].append(surprisal1)
-                test_data["Position"].append(pos1)
+                test_data["Position"].append(False)
+                test_data["Recent"].append(False)
                 test_data["Old_Tone"].append(seq1[pos1-1])
                 test_data["Old_Tone_Surprise"].append(probs1[pos1-1])
                 test_data["New_Tone"].append(new_seq1[pos1-1])
@@ -895,7 +903,7 @@ def CollectTrials(trial_seqs, subject_id):
 
             # Test trial 2
             if not change2:
-                test = TestTrial(seq2, False, -1, color2, gen2, surprisal2)
+                test = TestTrial(seq2, False, -1, color2, gen2, surprisal2, True)
                 guess, rt = test
                 test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
@@ -903,6 +911,7 @@ def CollectTrials(trial_seqs, subject_id):
                 test_data["Guess"].append(guess)
                 test_data["Surprise_Cond"].append(surprisal2)
                 test_data["Position"].append(None)
+                test_data["Recent"].append(True)
                 test_data["Old_Tone"].append(None)
                 test_data["Old_Tone_Surprise"].append(None)
                 test_data["New_Tone"].append(None)
@@ -912,7 +921,7 @@ def CollectTrials(trial_seqs, subject_id):
                 test_data["RT"].append(rt)
             else:
                 new_seq2, alt_prob2 = GenerateNewSeq(seq2, pos2, alts2, altpos2)
-                test = TestTrial(new_seq2, True, pos2, color2, gen2, surprisal2)
+                test = TestTrial(new_seq2, True, pos2, color2, gen2, surprisal2, True)
                 guess, rt = test
                 test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
@@ -920,6 +929,7 @@ def CollectTrials(trial_seqs, subject_id):
                 test_data["Guess"].append(guess)
                 test_data["Surprise_Cond"].append(surprisal2)
                 test_data["Position"].append(pos2)
+                test_data["Recent"].append(True)
                 test_data["Old_Tone"].append(seq2[pos2-1])
                 test_data["Old_Tone_Surprise"].append(probs2[pos2-1])
                 test_data["New_Tone"].append(new_seq2[pos2-1])
@@ -941,12 +951,19 @@ practice_path = 'Sequence/practice_sequences_dif.csv'
 trial_seqs = GenerateTrials(path)
 #practice_seqs = GeneratePracticeTrials(practice_path)
 
+subject_id = getSubjectInfo()
+
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
 win = visual.Window(
     size=window_size,
+    fullscr=fullscreen,
     color=bg_color,
     units="pix",
+    allowGUI=not fullscreen,
+    screen=0
 )
+
+win.mouseVisible = False
 
 # Build all visual objects once globally
 V = build_visuals()
@@ -960,7 +977,6 @@ for note in range(50, 90):
 clock = core.Clock()
 #port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)
 
-subject_id = getSubjectInfo()
 
 introMessage()
 
