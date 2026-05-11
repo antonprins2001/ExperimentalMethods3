@@ -877,7 +877,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
             if not change1:
                 test = TestTrial(seq1, False, -1, color1, gen1, surprisal1, False, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num)
+                test_data["Trial"].append(trial_num-1)
                 test_data["Generated"].append(gen1)
                 test_data["Changed"].append(False)
                 test_data["Guess"].append(guess)
@@ -895,7 +895,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
                 new_seq1, alt_prob1 = GenerateNewSeq(seq1, pos1, alts1, altpos1)
                 test = TestTrial(new_seq1, True, pos1, color1, gen1, surprisal1, False, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num)
+                test_data["Trial"].append(trial_num-1)
                 test_data["Generated"].append(gen1)
                 test_data["Changed"].append(True)
                 test_data["Guess"].append(guess)
@@ -917,7 +917,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
             if not change2:
                 test = TestTrial(seq2, False, -1, color2, gen2, surprisal2, True, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num+1)
+                test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen2)
                 test_data["Changed"].append(False)
                 test_data["Guess"].append(guess)
@@ -935,7 +935,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
                 new_seq2, alt_prob2 = GenerateNewSeq(seq2, pos2, alts2, altpos2)
                 test = TestTrial(new_seq2, True, pos2, color2, gen2, surprisal2, True, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num+1)
+                test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen2)
                 test_data["Changed"].append(True)
                 test_data["Guess"].append(guess)
