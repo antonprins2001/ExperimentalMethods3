@@ -735,7 +735,7 @@ def PracticeTrials(practice_seqs):
 
         if not seq_data["Change"]:
             guess, rt = TestTrial(seq, False, -1, color,
-                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True, send_triggers=False)
+                                  seq_data["Generated"], seq_data["Surprisal"], False, send_triggers=False, practice=True)
         else:
             if seq_data["Generated"]:
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
@@ -744,7 +744,7 @@ def PracticeTrials(practice_seqs):
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
                                                    [seq_data["Alternatives"]], 0)
             guess, rt = TestTrial(new_seq, True, seq_data["Position"], color,
-                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True, send_triggers=False)
+                                  seq_data["Generated"], seq_data["Surprisal"], False, send_triggers=False, practice=True)
 
         generic_txt.text = "Practice trial finished.\n\nPress any key to continue."
         generic_txt.draw()
@@ -961,7 +961,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 path          = "Sequence/sequences_dif.csv"
-practice_path = 'Sequence/practice_sequences.csv'
+practice_path = 'Sequence/practice_sequences_dif.csv'
 
 trial_seqs = GenerateTrials(path)
 practice_seqs = GeneratePracticeTrials(practice_path)
