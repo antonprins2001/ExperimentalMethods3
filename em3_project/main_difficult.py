@@ -113,7 +113,7 @@ def GenerateTrials(path):
 def GeneratePracticeTrials(path):
     df = pd.read_csv(path)
 
-    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy"]:
+    for col in ["Sequence", "Probabilites", "Surprisal", "Alternatives", "Entropy", "PitchDif"]:
         df[col] = df[col].apply(safe_literal_eval)
 
     trial_data = []
@@ -720,7 +720,7 @@ def PracticeTrials(practice_seqs):
 
         if not seq_data["Change"]:
             guess, rt = TestTrial(seq, False, -1, color,
-                                  seq_data["Generated"], seq_data["Surprisal"], False)
+                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True)
         else:
             if seq_data["Generated"]:
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
@@ -729,7 +729,7 @@ def PracticeTrials(practice_seqs):
                 new_seq, alt_prob = GenerateNewSeq(seq.copy(), seq_data["Position"],
                                                    [seq_data["Alternatives"]], 0)
             guess, rt = TestTrial(new_seq, True, seq_data["Position"], color,
-                                  seq_data["Generated"], seq_data["Surprisal"], False)
+                                  seq_data["Generated"], seq_data["Surprisal"], False, practice=True)
 
         generic_txt.text = "Practice trial finished.\n\nPress any key to continue."
         generic_txt.draw()
@@ -946,10 +946,10 @@ def CollectTrials(trial_seqs, subject_id):
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 path          = "Sequence/sequences_dif.csv"
-practice_path = 'Sequence/practice_sequences_dif.csv'
+practice_path = 'Sequence/practice_sequences.csv'
 
 trial_seqs = GenerateTrials(path)
-#practice_seqs = GeneratePracticeTrials(practice_path)
+practice_seqs = GeneratePracticeTrials(practice_path)
 
 subject_id = getSubjectInfo()
 
@@ -980,7 +980,7 @@ clock = core.Clock()
 
 introMessage()
 
-#PracticeTrials(practice_seqs)
+PracticeTrials(practice_seqs)
 
 test_data, trial_data = CollectTrials(trial_seqs, subject_id)
 
