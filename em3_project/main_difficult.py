@@ -463,12 +463,6 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
     altpos = -1
     RTs = []
 
-    tones = {}
-    for note in tree:
-        if note not in tones:
-            freq = ConvertFreq(note)
-            tones[note] = sound.Sound(value=freq, secs=duration, stereo=True, hamming=True)
-
     trial_colors = ["red", "blue", "cyan", "yellow", "pink", "green", "purple"]
     col = random.choice(trial_colors)
     V['color_cue'].fillColor = col
@@ -615,7 +609,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
 
 
 # ─── TestTrial ────────────────────────────────────────────────────────────────
-def TestTrial(seq, change, pos, col, generated, surprisal, recent, practice = False, send_triggers):
+def TestTrial(seq, change, pos, col, generated, surprisal, recent, send_triggers, practice = False):
     win.color = C_PAGE
     V['col_cue'].fillColor = col
 
@@ -1001,7 +995,7 @@ clock = core.Clock()
 
 introMessage()
 
-PracticeTrials(practice_seqs)
+#PracticeTrials(practice_seqs)
 
 test_data, trial_data = CollectTrials(trial_seqs, subject_id, False)
 
