@@ -6,6 +6,13 @@ import os
 import serial
 import random
 
+SIMULATE = True  # Set True to run without audio/manual input
+
+def sim_wait(t):
+    """Skip all waits in simulate mode for fast crash-test runs."""
+    if not SIMULATE:
+        core.wait(t)
+
 C_PAGE    = [0.867, 0.851, 0.812]
 C_CARD    = 'white';   C_BD_CARD = '#dddddd'
 C_BG_SEC  = '#f5f4f0'; C_BD_SEC  = '#dedcda'
@@ -62,9 +69,6 @@ def TestTriggerCode(generated, surprisal, position, recent):
             surp = "3"
         elif surprisal == (True, False):
             surp = "4"
-        else:
-            surp = "0"
-            print(f"Error: Surprisal not defined. Trial with gen: {generated}, surprisal: {surprisal}, position: {position}, recent: {recent}")
     if recent:
         pos = str(
             position + 5
@@ -103,16 +107,15 @@ def GenerateTrials(path):
     for i in range(0, min(len(df_gen_shuf.index), len(df_memo_shuf.index)) - 1, 2):
         trial1 = df_gen_shuf.iloc[i].to_dict()
         trial2 = df_gen_shuf.iloc[i+1].to_dict()
-        trial1["trial"] = i*2
-        trial2["trial"] = i*2 + 1
+        trial1["trial"] = len(trial_data)
+        trial2["trial"] = len(trial_data) + 1
         trial_data.append(trial1)
         trial_data.append(trial2)
 
         trial3 = df_memo_shuf.iloc[i].to_dict()
         trial4 = df_memo_shuf.iloc[i+1].to_dict()
-        trial3["trial"] = (i+1)*2
-        trial4["trial"] = (i+1)*2 + 1
-
+        trial3["trial"] = len(trial_data)
+        trial4["trial"] = len(trial_data) + 1
         trial_data.append(trial3)
         trial_data.append(trial4)
 
@@ -235,7 +238,8 @@ def introMessage():
     )
     V['generic_txt'].draw()
     win.flip()
-    event.waitKeys()
+    if not SIMULATE:
+        event.waitKeys()
 
 def genBlockIntro():
     win.color = C_PAGE
@@ -247,7 +251,7 @@ def genBlockIntro():
     )
     V['generic_txt'].draw()
     win.flip()
-    core.wait(2)
+    sim_wait(2)
 
 def memoBlockIntro():
     win.color = C_PAGE
@@ -259,7 +263,7 @@ def memoBlockIntro():
     )
     V['generic_txt'].draw()
     win.flip()
-    core.wait(2)
+    sim_wait(2)
 
 # ─── MemoryTrial ──────────────────────────────────────────────────────────────
 def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_triggers):
@@ -343,7 +347,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_tri
         draw_scene(n_green=1, active_idx=0, opt_header='', opt_color=None, show_buttons=False)
         tones[note].play()
         core.wait(duration)
-        core.wait(1.0)
+        sim_wait(1.0)
         draw_scene(1, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
 
     def play_animated(path, n_confirmed):
@@ -396,7 +400,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_tri
         win.flip()
 
     draw_intro()
-    core.wait(2)
+    sim_wait(2)
 
     play_root_tone(path_tones[0])
     RTs.append(0.0)
@@ -410,7 +414,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_tri
         n_confirmed = len(path_tones)
 
         play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
-        core.wait(0.4)
+        sim_wait(0.4)
         play_option(path_tones + [tree[child2]], n_confirmed, '▶ Option B', 'B')
 
         if random.choice([True, False]):
@@ -423,13 +427,15 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_tri
         clock.reset()
         event.clearEvents()
         response = False
+        if SIMULATE:
+            response = True
         while not response:
             keys = event.getKeys(keyList=['space', 'escape'])
             if 'escape' in keys:
                 core.quit()
             if 'space' in keys:
                 response = True
-            core.wait(0.001)
+            sim_wait(0.001)
 
         RTs.append(clock.getTime())
 
@@ -444,7 +450,7 @@ def MemoryTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send_tri
         alt_tones.append(tree[alt])
         alt_probs.append(prob_tree[alt])
 
-        core.wait(0.5)
+        sim_wait(0.5)
 
     play_animated(path_tones, n_confirmed=5)
     draw_scene(5, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
@@ -537,7 +543,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
         draw_scene(n_green=1, active_idx=0, opt_header='', opt_color=None, show_buttons=False)
         tones[note].play()
         core.wait(duration)
-        core.wait(1.0)
+        sim_wait(1.0)
         draw_scene(1, active_idx=-1, opt_header='', opt_color=None, show_buttons=False)
 
     def play_animated(path, n_confirmed):
@@ -558,7 +564,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
         win.flip()
 
     draw_intro()
-    core.wait(2)
+    sim_wait(2)
 
     play_root_tone(path_tones[0])
     RTs.append(0.0)
@@ -572,13 +578,19 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
         n_confirmed = len(path_tones)
 
         play_option(path_tones + [tree[child1]], n_confirmed, '▶ Option A', 'A')
-        core.wait(0.4)
+        sim_wait(0.4)
         play_option(path_tones + [tree[child2]], n_confirmed, '▶ Option B', 'B')
 
         draw_scene(n_confirmed, active_idx=-1, opt_header='', opt_color=None, show_buttons=True)
         clock.reset()
         event.clearEvents()
         response = False
+        if SIMULATE:
+            if random.random() < 0.5:
+                choice = child1; alt = child2
+            else:
+                choice = child2; alt = child1
+            response = True
         while not response:
             keys = event.getKeys(keyList=['z', 'm', 'escape'])
             if 'escape' in keys:
@@ -587,7 +599,7 @@ def ProductionTrial(tree, prob_tree, entropy_tree, pitch_tree, altposition, send
                 choice = child1; alt = child2; response = True
             if 'm' in keys:
                 choice = child2; alt = child1; response = True
-            core.wait(0.001)
+            sim_wait(0.001)
 
         RTs.append(clock.getTime())
 
@@ -645,7 +657,8 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, send_triggers
         win.flip()
 
     draw_test(active_idx=-1, show_buttons=False, show_prompt=True)
-    event.waitKeys()
+    if not SIMULATE:
+        event.waitKeys()
 
     for i, note in enumerate(seq):
         draw_test(active_idx=i, show_buttons=False)
@@ -660,25 +673,28 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, send_triggers
         core.wait(duration)
 
     if send_triggers:
-        win.callOnFlip(trigger, 80, port)
+        win.callOnFlip(trigger, (80, port))
     draw_test(active_idx=-1, show_buttons=True)
     event.clearEvents()
     clock.reset()
 
-    response = False
-    while not response:
-        keys = event.getKeys(keyList=['z', 'm', 'escape'])
-        if 'escape' in keys:
-            core.quit()
-        if 'z' in keys:
-            guess = False; response = True
-        if 'm' in keys:
-            guess = True; response = True
-        core.wait(0.001)
-
-    if send_triggers:
-        trigger(90, port)
-    rt = clock.getTime()
+    if SIMULATE:
+        guess = random.choice([True, False])
+        rt = random.uniform(0.4, 2.0)
+    else:
+        response = False
+        while not response:
+            keys = event.getKeys(keyList=['z', 'm', 'escape'])
+            if 'escape' in keys:
+                core.quit()
+            if 'z' in keys:
+                guess = False; response = True
+            if 'm' in keys:
+                guess = True; response = True
+            sim_wait(0.001)
+        if send_triggers:
+            trigger(90, port)
+        rt = clock.getTime()
 
     def draw_feedback(correct):
         card.draw()
@@ -688,7 +704,7 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, send_triggers
             V['feedback_wrong'].draw()
         col_cue.draw()
         win.flip()
-        core.wait(0.3)
+        sim_wait(0.3)
 
     draw_feedback((guess == change))
 
@@ -705,7 +721,8 @@ def PracticeTrials(practice_seqs):
             generic_txt.text = "Practice trial\n\nThis is a production trial.\n\nPress any key to start."
             generic_txt.draw()
             win.flip()
-            event.waitKeys()
+            if not SIMULATE:
+                event.waitKeys()
 
             trial = ProductionTrial(
                 tree=seq_data["Sequence"],
@@ -719,7 +736,8 @@ def PracticeTrials(practice_seqs):
             generic_txt.text = "Practice trial\n\nThis is a memory trial.\n\nPress any key to start."
             generic_txt.draw()
             win.flip()
-            event.waitKeys()
+            if not SIMULATE:
+                event.waitKeys()
 
             trial = MemoryTrial(
                 tree=seq_data["Sequence"],
@@ -749,12 +767,14 @@ def PracticeTrials(practice_seqs):
         generic_txt.text = "Practice trial finished.\n\nPress any key to continue."
         generic_txt.draw()
         win.flip()
-        event.waitKeys()
+        if not SIMULATE:
+            event.waitKeys()
 
     generic_txt.text = "Practice is finished.\n\nPress any key to begin the real experiment."
     generic_txt.draw()
     win.flip()
-    event.waitKeys()
+    if not SIMULATE:
+        event.waitKeys()
 
 
 def GenerateNewSeq(seq, pos, alts, altpos):
@@ -789,7 +809,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
         # Fixed ITI — blank screen between trials
         win.color = C_PAGE
         win.flip()
-        core.wait(1.0)
+        sim_wait(1.0)
 
         if trial_num % 2 == 0:
 
@@ -880,7 +900,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
             if not change1:
                 test = TestTrial(seq1, False, -1, color1, gen1, surprisal1, False, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num-1)
+                test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen1)
                 test_data["Changed"].append(False)
                 test_data["Guess"].append(guess)
@@ -898,7 +918,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
                 new_seq1, alt_prob1 = GenerateNewSeq(seq1, pos1, alts1, altpos1)
                 test = TestTrial(new_seq1, True, pos1, color1, gen1, surprisal1, False, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num-1)
+                test_data["Trial"].append(trial_num)
                 test_data["Generated"].append(gen1)
                 test_data["Changed"].append(True)
                 test_data["Guess"].append(guess)
@@ -920,7 +940,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
             if not change2:
                 test = TestTrial(seq2, False, -1, color2, gen2, surprisal2, True, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num)
+                test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
                 test_data["Changed"].append(False)
                 test_data["Guess"].append(guess)
@@ -938,7 +958,7 @@ def CollectTrials(trial_seqs, subject_id, triggers):
                 new_seq2, alt_prob2 = GenerateNewSeq(seq2, pos2, alts2, altpos2)
                 test = TestTrial(new_seq2, True, pos2, color2, gen2, surprisal2, True, send_triggers = triggers)
                 guess, rt = test
-                test_data["Trial"].append(trial_num)
+                test_data["Trial"].append(trial_num+1)
                 test_data["Generated"].append(gen2)
                 test_data["Changed"].append(True)
                 test_data["Guess"].append(guess)
@@ -960,21 +980,21 @@ def CollectTrials(trial_seqs, subject_id, triggers):
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
-path          = "Sequence/sequences_dif.csv"
+path          = "Sequence/sequences_dif.csv" if SIMULATE else "Sequence/sequences_dif.csv"
 practice_path = 'Sequence/practice_sequences_dif.csv'
 
 trial_seqs = GenerateTrials(path)
 practice_seqs = GeneratePracticeTrials(practice_path)
 
-subject_id = getSubjectInfo()
+subject_id = "SIM" if SIMULATE else getSubjectInfo()
 
 fullscreen, window_size, bg_color, text_color, duration, response_keys = getSettings()
 win = visual.Window(
     size=window_size,
-    fullscr=fullscreen,
+    fullscr=False if SIMULATE else fullscreen,
     color=bg_color,
     units="pix",
-    allowGUI=not fullscreen,
+    allowGUI=True,
     screen=0
 )
 
@@ -985,7 +1005,7 @@ V = build_visuals()
 
 # Build all sounds once globally
 tones = {}
-for note in range(30, 109):
+for note in range(21, 109):
     freq = ConvertFreq(note)
     tones[note] = sound.Sound(value=freq, secs=0.4, stereo=True, hamming=True)
 
