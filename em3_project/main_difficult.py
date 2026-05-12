@@ -62,6 +62,9 @@ def TestTriggerCode(generated, surprisal, position, recent):
             surp = "3"
         elif surprisal == (True, False):
             surp = "4"
+        else:
+            surp = "0"
+            print(f"Error: Surprisal not defined. Trial with gen: {generated}, surprisal: {surprisal}, position: {position}, recent: {recent}")
     if recent:
         pos = str(
             position + 5
