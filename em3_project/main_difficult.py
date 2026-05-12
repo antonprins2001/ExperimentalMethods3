@@ -657,7 +657,7 @@ def TestTrial(seq, change, pos, col, generated, surprisal, recent, send_triggers
         core.wait(duration)
 
     if send_triggers:
-        win.callOnFlip(trigger, (80, port))
+        win.callOnFlip(trigger, 80, port)
     draw_test(active_idx=-1, show_buttons=True)
     event.clearEvents()
     clock.reset()
