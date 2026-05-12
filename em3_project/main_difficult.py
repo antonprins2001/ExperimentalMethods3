@@ -990,15 +990,15 @@ for note in range(30, 109):
     tones[note] = sound.Sound(value=freq, secs=0.4, stereo=True, hamming=True)
 
 clock = core.Clock()
-#port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)
+port = serial.Serial('/dev/tty.usbserial-DN2Q03LO', 115200)
 
 
 introMessage()
 
 #PracticeTrials(practice_seqs)
 
-test_data, trial_data = CollectTrials(trial_seqs, subject_id, False)
+test_data, trial_data = CollectTrials(trial_seqs, subject_id, True)
 
-#port.close()
+port.close()
 
 core.quit()
