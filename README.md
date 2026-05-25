@@ -1,6 +1,8 @@
 The files we have used thorughout the experiment:
 
-Experiment.py is the main flow of the experiment.
-main.py initializes the experiment in psychopy.
+main_difficult.py is the main program for the experiment.
+Sequences directory is the melody generation.
 
-Bilag_tekster.pdf is all self-chosen texts used in the proces.
+R-model is the model used in the behavioural analysis
+
+
